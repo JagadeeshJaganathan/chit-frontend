@@ -26,6 +26,8 @@ const Dashboard = () => {
   const membersSectionRef = useRef<HTMLDivElement | null>(null);
   const paidSectionRef = useRef<HTMLDivElement | null>(null);
   const pendingSectionRef = useRef<HTMLDivElement | null>(null);
+  const autoMonthGroupRef = useRef("");
+  const requestIdRef = useRef(0);
 
   const activeGroups = useMemo(
     () => groups.filter((group) => !group.isEnded),
@@ -65,6 +67,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (!selectedGroupData) return;
 
+    if (autoMonthGroupRef.current === selectedGroupData._id) {
+      return;
+    }
+
+    autoMonthGroupRef.current = selectedGroupData._id;
     setMonth(
       getMonthNumberForDate(selectedGroupData.startDate, selectedGroupData.duration),
     );
@@ -73,8 +80,15 @@ const Dashboard = () => {
   const loadDashboard = useCallback(async () => {
     if (!selectedGroup) return;
 
+    const requestId = ++requestIdRef.current;
+
     try {
       const res = await API.get(`/dashboard/${selectedGroup}/${month}`);
+
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       setData(res.data);
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
@@ -160,17 +174,32 @@ const Dashboard = () => {
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3">
-          <select
-            className="input-surface"
-            value={selectedGroup}
-            onChange={(e) => setSelectedGroup(e.target.value)}
-          >
-            {activeGroups.map((group: any) => (
-              <option key={group._id} value={group._id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-wrap gap-2">
+            {activeGroups.map((group: any) => {
+              const isActive = selectedGroup === group._id;
+
+              return (
+                <label
+                  key={group._id}
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                    isActive
+                      ? "border-[#c75c2a] bg-[#fff0e5] text-[#8d3413]"
+                      : "border-[#e4d6c5] bg-white/70 text-[#6f604c]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="dashboard-group"
+                    value={group._id}
+                    checked={isActive}
+                    onChange={() => setSelectedGroup(group._id)}
+                    className="sr-only"
+                  />
+                  {group.name}
+                </label>
+              );
+            })}
+          </div>
 
           <select
             className="input-surface"

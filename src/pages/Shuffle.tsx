@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import API from "../services/api";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { getMonthNumberForDate, getMonthOptions } from "../utils/group";
@@ -21,6 +21,8 @@ const Shuffle = ({ isAdmin }: Props) => {
   const [isShuffling, setIsShuffling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const autoMonthGroupRef = useRef("");
+  const requestIdRef = useRef(0);
 
   const activeGroups = useMemo(
     () => groups.filter((group) => !group.isEnded),
@@ -66,6 +68,11 @@ const Shuffle = ({ isAdmin }: Props) => {
   useEffect(() => {
     if (!selectedGroupData) return;
 
+    if (autoMonthGroupRef.current === selectedGroupData._id) {
+      return;
+    }
+
+    autoMonthGroupRef.current = selectedGroupData._id;
     setCandidate(null);
     setStatusMessage("");
     setMonth(
@@ -76,9 +83,16 @@ const Shuffle = ({ isAdmin }: Props) => {
   const loadDashboard = useCallback(async () => {
     if (!selectedGroup) return;
 
+    const requestId = ++requestIdRef.current;
+
     try {
       setStatusMessage("");
       const res = await API.get(`/dashboard/${selectedGroup}/${month}`);
+
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       setDashboardData(res.data);
       setCandidate(null);
     } catch (err) {
