@@ -264,34 +264,41 @@ const Dashboard = () => {
         </button>
       </div>
 
-      <div ref={membersSectionRef} className="soft-card rounded-[28px] p-5">
+      <div ref={pendingSectionRef} className="soft-card rounded-[28px] p-5">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="section-title">{t("winner")}</p>
-            <h3 className="mt-2 text-lg font-extrabold">
-              {data.winner?.name || t("winner_not_selected")}
-            </h3>
-          </div>
-          {data.winner && (
-            <span className="rounded-full bg-[#fff2b6] px-3 py-1 text-xs font-bold text-[#7c5a00]">
-              {t("this_month")}
-            </span>
+          <h3 className="text-lg font-extrabold">{t("pending_members")}</h3>
+          <span className="rounded-full bg-[#fff1ed] px-3 py-1 text-xs font-bold text-[#c75c2a]">
+            {data.pendingCount} {t("pending").toLowerCase()}
+          </span>
+        </div>
+        <div className="mt-4 space-y-3">
+          {data.pendingMembers.length === 0 ? (
+            <p className="text-sm text-[#7b6a56]">{t("everyone_paid")}</p>
+          ) : (
+            data.pendingMembers.map((member: any) => (
+              <div
+                key={member._id}
+                className="rounded-[22px] bg-[#f9f5ee] p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold">{member.name}</p>
+                    <p className="text-sm text-[#7b6a56]">{t("awaiting_payment")}</p>
+                  </div>
+                  {isAdmin && selectedGroupData && (
+                    <PaymentButton
+                      memberId={member._id}
+                      groupId={selectedGroup}
+                      month={month}
+                      onSuccess={loadDashboard}
+                      disabled={selectedGroupData.isEnded}
+                    />
+                  )}
+                </div>
+              </div>
+            ))
           )}
         </div>
-
-        {isAdmin && selectedGroupData && (
-          <div className="mt-4">
-            <WinnerSelector
-              members={[...data.paidMembers, ...data.pendingMembers]}
-              groupId={selectedGroup}
-              month={month}
-              onSuccess={loadDashboard}
-              currentWinner={data.winner}
-              winners={data.allWinners || []}
-              disabled={selectedGroupData.isEnded}
-            />
-          </div>
-        )}
       </div>
 
       <div ref={paidSectionRef} className="soft-card rounded-[28px] p-5">
@@ -341,41 +348,34 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div ref={pendingSectionRef} className="soft-card rounded-[28px] p-5">
+      <div ref={membersSectionRef} className="soft-card rounded-[28px] p-5">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-extrabold">{t("pending_members")}</h3>
-          <span className="rounded-full bg-[#fff1ed] px-3 py-1 text-xs font-bold text-[#c75c2a]">
-            {data.pendingCount} {t("pending").toLowerCase()}
-          </span>
-        </div>
-        <div className="mt-4 space-y-3">
-          {data.pendingMembers.length === 0 ? (
-            <p className="text-sm text-[#7b6a56]">{t("everyone_paid")}</p>
-          ) : (
-            data.pendingMembers.map((member: any) => (
-              <div
-                key={member._id}
-                className="rounded-[22px] bg-[#f9f5ee] p-4"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="font-bold">{member.name}</p>
-                    <p className="text-sm text-[#7b6a56]">{t("awaiting_payment")}</p>
-                  </div>
-                  {isAdmin && selectedGroupData && (
-                    <PaymentButton
-                      memberId={member._id}
-                      groupId={selectedGroup}
-                      month={month}
-                      onSuccess={loadDashboard}
-                      disabled={selectedGroupData.isEnded}
-                    />
-                  )}
-                </div>
-              </div>
-            ))
+          <div>
+            <p className="section-title">{t("winner")}</p>
+            <h3 className="mt-2 text-lg font-extrabold">
+              {data.winner?.name || t("winner_not_selected")}
+            </h3>
+          </div>
+          {data.winner && (
+            <span className="rounded-full bg-[#fff2b6] px-3 py-1 text-xs font-bold text-[#7c5a00]">
+              {t("this_month")}
+            </span>
           )}
         </div>
+
+        {isAdmin && selectedGroupData && (
+          <div className="mt-4">
+            <WinnerSelector
+              members={[...data.paidMembers, ...data.pendingMembers]}
+              groupId={selectedGroup}
+              month={month}
+              onSuccess={loadDashboard}
+              currentWinner={data.winner}
+              winners={data.allWinners || []}
+              disabled={selectedGroupData.isEnded}
+            />
+          </div>
+        )}
       </div>
 
       <div className="soft-card rounded-[28px] p-4">
