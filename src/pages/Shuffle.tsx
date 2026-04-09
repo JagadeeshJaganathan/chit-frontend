@@ -20,6 +20,7 @@ const Shuffle = ({ isAdmin }: Props) => {
   const [candidate, setCandidate] = useState<any>(null);
   const [isShuffling, setIsShuffling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
 
   const activeGroups = useMemo(
     () => groups.filter((group) => !group.isEnded),
@@ -40,6 +41,12 @@ const Shuffle = ({ isAdmin }: Props) => {
 
       if (nextGroups.length === 0) {
         setSelectedGroup("");
+        setDashboardData({
+          paidMembers: [],
+          pendingMembers: [],
+          winner: null,
+          allWinners: [],
+        });
         return;
       }
 
@@ -59,6 +66,8 @@ const Shuffle = ({ isAdmin }: Props) => {
   useEffect(() => {
     if (!selectedGroupData) return;
 
+    setCandidate(null);
+    setStatusMessage("");
     setMonth(
       getMonthNumberForDate(selectedGroupData.startDate, selectedGroupData.duration),
     );
@@ -68,6 +77,7 @@ const Shuffle = ({ isAdmin }: Props) => {
     if (!selectedGroup) return;
 
     try {
+      setStatusMessage("");
       const res = await API.get(`/dashboard/${selectedGroup}/${month}`);
       setDashboardData(res.data);
       setCandidate(null);
@@ -94,36 +104,37 @@ const Shuffle = ({ isAdmin }: Props) => {
     return allMembers.filter((member: any) => !wonIds.has(String(member._id)));
   }, [dashboardData.allWinners, dashboardData.paidMembers, dashboardData.pendingMembers]);
 
-  const handleShuffle = () => {
+  const handleShuffle = async () => {
     if (eligibleMembers.length === 0) {
       alert("No eligible members available for shuffle");
       return;
     }
 
-    setIsShuffling(true);
-
-    window.setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * eligibleMembers.length);
-      setCandidate(eligibleMembers[randomIndex]);
-      setIsShuffling(false);
-    }, 700);
-  };
-
-  const handleConfirmWinner = async () => {
-    if (!candidate || !selectedGroup) return;
+    if (!selectedGroup) return;
 
     try {
+      setStatusMessage("");
+      setCandidate(null);
+      setIsShuffling(true);
+      await new Promise((resolve) => window.setTimeout(resolve, 700));
+
+      const randomIndex = Math.floor(Math.random() * eligibleMembers.length);
+      const selectedCandidate = eligibleMembers[randomIndex];
+      setCandidate(selectedCandidate);
+
       setIsSaving(true);
       await API.post("/winners", {
         groupId: selectedGroup,
-        memberId: candidate._id,
+        memberId: selectedCandidate._id,
         month,
       });
+
       await loadDashboard();
-      alert("Winner selected successfully");
+      setStatusMessage(`${selectedCandidate.name} is now the winner for this month.`);
     } catch (err: any) {
       alert(err.response?.data?.message || "Unable to save winner");
     } finally {
+      setIsShuffling(false);
       setIsSaving(false);
     }
   };
@@ -223,7 +234,7 @@ const Shuffle = ({ isAdmin }: Props) => {
               <p className="text-xl font-extrabold text-[#c75c2a]">Shuffling...</p>
             ) : candidate ? (
               <>
-                <p className="text-sm text-[#7b6a56]">Selected candidate</p>
+                <p className="text-sm text-[#7b6a56]">Winner selected</p>
                 <p className="mt-2 text-3xl font-extrabold text-[#8d3413]">
                   {candidate.name}
                 </p>
@@ -241,15 +252,11 @@ const Shuffle = ({ isAdmin }: Props) => {
               disabled={isShuffling || isSaving || !!dashboardData.winner}
               className="pill-button w-full bg-[#c75c2a] text-white disabled:opacity-50"
             >
-              {isShuffling ? "Shuffling..." : "Shuffle Winner"}
+              {isShuffling || isSaving ? "Shuffling..." : "Shuffle Winner"}
             </button>
-            <button
-              onClick={handleConfirmWinner}
-              disabled={!candidate || isSaving || !!dashboardData.winner}
-              className="pill-button w-full bg-[#2f8f62] text-white disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : "Confirm This Winner"}
-            </button>
+            {statusMessage && (
+              <p className="text-sm font-semibold text-[#2f8f62]">{statusMessage}</p>
+            )}
           </div>
         </div>
       </div>
