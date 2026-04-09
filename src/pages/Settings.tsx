@@ -471,6 +471,31 @@ const Settings = ({ isAdmin }: Props) => {
           </div>
 
           <div className="soft-card rounded-[26px] p-5">
+            <p className="section-title">{t("export")}</p>
+            <h3 className="mt-2 text-lg font-extrabold">{t("pdf_report")}</h3>
+            <p className="mt-2 text-sm text-[#7b6a56]">
+              {t("export_desc")}
+            </p>
+            <div className="mt-3 rounded-2xl bg-[#f8f3eb] p-3 text-sm text-[#6f604c]">
+              {currentMonthLabel || `M${currentMonthNumber}`}
+            </div>
+            <button
+              onClick={handleExportPdf}
+              disabled={isExporting}
+              className="pill-button mt-4 w-full bg-[#3558a8] text-white disabled:opacity-50"
+            >
+              {isExporting ? t("preparing_pdf") : t("export_pdf")}
+            </button>
+            <button
+              onClick={handleShareToWhatsApp}
+              disabled={isSharing}
+              className="pill-button mt-3 w-full bg-[#2f8f62] text-white disabled:opacity-50"
+            >
+              {isSharing ? t("preparing_whatsapp") : t("share_whatsapp")}
+            </button>
+          </div>
+
+          <div className="soft-card rounded-[26px] p-5">
             <p className="section-title">{t("edit_group")}</p>
             <h3 className="mt-2 text-lg font-extrabold">{t("update_group")}</h3>
             <p className="mt-2 text-sm text-[#7b6a56]">
@@ -527,31 +552,6 @@ const Settings = ({ isAdmin }: Props) => {
               className="pill-button mt-4 w-full bg-[#c75c2a] text-white disabled:opacity-60"
             >
               {isUpdatingGroup ? t("updating") : t("update_group_button")}
-            </button>
-          </div>
-
-          <div className="soft-card rounded-[26px] p-5">
-            <p className="section-title">{t("export")}</p>
-            <h3 className="mt-2 text-lg font-extrabold">{t("pdf_report")}</h3>
-            <p className="mt-2 text-sm text-[#7b6a56]">
-              {t("export_desc")}
-            </p>
-            <div className="mt-3 rounded-2xl bg-[#f8f3eb] p-3 text-sm text-[#6f604c]">
-              {currentMonthLabel || `M${currentMonthNumber}`}
-            </div>
-            <button
-              onClick={handleExportPdf}
-              disabled={isExporting}
-              className="pill-button mt-4 w-full bg-[#3558a8] text-white disabled:opacity-50"
-            >
-              {isExporting ? t("preparing_pdf") : t("export_pdf")}
-            </button>
-            <button
-              onClick={handleShareToWhatsApp}
-              disabled={isSharing}
-              className="pill-button mt-3 w-full bg-[#2f8f62] text-white disabled:opacity-50"
-            >
-              {isSharing ? t("preparing_whatsapp") : t("share_whatsapp")}
             </button>
           </div>
 
