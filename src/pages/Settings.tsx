@@ -389,6 +389,31 @@ const Settings = ({ isAdmin }: Props) => {
           </div>
 
           <div className="soft-card rounded-[26px] p-5">
+            <p className="section-title">Export</p>
+            <h3 className="mt-2 text-lg font-extrabold">Current month PDF report</h3>
+            <p className="mt-2 text-sm text-[#7b6a56]">
+              Export paid, pending, and the current month winner as a print-ready PDF.
+            </p>
+            <div className="mt-3 rounded-2xl bg-[#f8f3eb] p-3 text-sm text-[#6f604c]">
+              {currentMonthLabel || `M${currentMonthNumber}`}
+            </div>
+            <button
+              onClick={handleExportPdf}
+              disabled={isExporting}
+              className="pill-button mt-4 w-full bg-[#3558a8] text-white disabled:opacity-50"
+            >
+              {isExporting ? "Preparing PDF..." : "Export PDF"}
+            </button>
+            <button
+              onClick={handleShareToWhatsApp}
+              disabled={isSharing}
+              className="pill-button mt-3 w-full bg-[#2f8f62] text-white disabled:opacity-50"
+            >
+              {isSharing ? "Preparing WhatsApp..." : "Share to WhatsApp"}
+            </button>
+          </div>
+
+          <div className="soft-card rounded-[26px] p-5">
             <p className="section-title">Start Month</p>
             <h3 className="mt-2 text-lg font-extrabold">Move the chit calendar</h3>
             <p className="mt-2 text-sm text-[#7b6a56]">
@@ -429,31 +454,6 @@ const Settings = ({ isAdmin }: Props) => {
                 : isEnding
                   ? "Ending..."
                   : "End This Chit"}
-            </button>
-          </div>
-
-          <div className="soft-card rounded-[26px] p-5">
-            <p className="section-title">Export</p>
-            <h3 className="mt-2 text-lg font-extrabold">Current month PDF report</h3>
-            <p className="mt-2 text-sm text-[#7b6a56]">
-              Export paid, pending, and the current month winner as a print-ready PDF.
-            </p>
-            <div className="mt-3 rounded-2xl bg-[#f8f3eb] p-3 text-sm text-[#6f604c]">
-              {currentMonthLabel || `M${currentMonthNumber}`}
-            </div>
-            <button
-              onClick={handleExportPdf}
-              disabled={isExporting}
-              className="pill-button mt-4 w-full bg-[#3558a8] text-white disabled:opacity-50"
-            >
-              {isExporting ? "Preparing PDF..." : "Export PDF"}
-            </button>
-            <button
-              onClick={handleShareToWhatsApp}
-              disabled={isSharing}
-              className="pill-button mt-3 w-full bg-[#2f8f62] text-white disabled:opacity-50"
-            >
-              {isSharing ? "Preparing WhatsApp..." : "Share to WhatsApp"}
             </button>
           </div>
         </div>
