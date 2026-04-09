@@ -1,4 +1,5 @@
 import API from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 type Props = {
   memberId: string;
@@ -15,6 +16,7 @@ const PaymentButton = ({
   onSuccess,
   disabled,
 }: Props) => {
+  const { t } = useLanguage();
   const handlePayment = async () => {
     if (disabled) return;
 
@@ -25,7 +27,7 @@ const PaymentButton = ({
         month,
       });
 
-      alert("Payment successful");
+      alert(t("paid"));
       onSuccess();
     } catch (err: any) {
       alert(err.response?.data?.message || "Payment error");
@@ -38,7 +40,7 @@ const PaymentButton = ({
       disabled={disabled}
       className="pill-button bg-[#2f8f62] px-4 py-2 text-sm text-white disabled:opacity-50"
     >
-      Mark Paid
+      {t("paid")}
     </button>
   );
 };

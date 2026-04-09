@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import API from "../services/api";
 import Breadcrumbs from "../components/Breadcrumbs";
+import { useLanguage } from "../context/LanguageContext";
 import {
   DEFAULT_START_MONTH,
   formatMonthLabel,
@@ -29,6 +30,7 @@ const Settings = ({ isAdmin }: Props) => {
     startMonth: DEFAULT_START_MONTH,
   });
   const [isCreating, setIsCreating] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
 
   const loadGroups = useCallback(async () => {
     try {
@@ -79,7 +81,7 @@ const Settings = ({ isAdmin }: Props) => {
   if (!isAdmin) {
     return (
       <div className="space-y-4 fade-in-up">
-        <Breadcrumbs items={["Home", "Settings"]} />
+      <Breadcrumbs items={[t("home"), t("settings")]} />
         <div className="glass-card rounded-[28px] p-6 text-center">
           <p className="section-title">Restricted</p>
           <h2 className="mt-2 text-xl font-extrabold">Admin access required</h2>
@@ -311,27 +313,53 @@ const Settings = ({ isAdmin }: Props) => {
 
   return (
     <div className="space-y-4 fade-in-up">
-      <Breadcrumbs items={["Home", "Admin", "Settings"]} />
+      <Breadcrumbs items={[t("home"), t("admin"), t("settings")]} />
 
       <div className="glass-card rounded-[28px] p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="section-title">Settings</p>
+            <p className="section-title">{t("settings_title")}</p>
             <h1 className="mt-2 text-[1.6rem] font-extrabold leading-tight">
-              Group controls
+              {t("group_controls")}
             </h1>
             <p className="mt-2 text-sm text-[#7b6a56]">
-              Change start month, close a chit, or launch the next group.
+              {t("settings_desc")}
             </p>
           </div>
           <div className="rounded-full bg-[#fff2e8] px-3 py-1 text-xs font-bold text-[#a1441e]">
-            Admin
+            {t("admin")}
           </div>
         </div>
       </div>
 
       <div className="soft-card rounded-[26px] p-4">
-        <label className="section-title">Select Group</label>
+        <label className="section-title">{t("language")}</label>
+        <div className="mt-3 flex gap-2">
+          <label className={`rounded-full border px-4 py-2 text-sm font-semibold ${language === "en" ? "border-[#c75c2a] bg-[#fff0e5] text-[#8d3413]" : "border-[#e4d6c5] bg-white/70 text-[#6f604c]"}`}>
+            <input
+              type="radio"
+              name="app-language"
+              checked={language === "en"}
+              onChange={() => setLanguage("en")}
+              className="sr-only"
+            />
+            {t("english")}
+          </label>
+          <label className={`rounded-full border px-4 py-2 text-sm font-semibold ${language === "ta" ? "border-[#c75c2a] bg-[#fff0e5] text-[#8d3413]" : "border-[#e4d6c5] bg-white/70 text-[#6f604c]"}`}>
+            <input
+              type="radio"
+              name="app-language"
+              checked={language === "ta"}
+              onChange={() => setLanguage("ta")}
+              className="sr-only"
+            />
+            {t("tamil")}
+          </label>
+        </div>
+      </div>
+
+      <div className="soft-card rounded-[26px] p-4">
+        <label className="section-title">{t("select_group")}</label>
         <select
           className="input-surface mt-3"
           value={selectedGroup}
@@ -339,7 +367,7 @@ const Settings = ({ isAdmin }: Props) => {
         >
           {groups.map((group: any) => (
             <option key={group._id} value={group._id}>
-              {group.name} {group.isEnded ? "(Ended)" : "(Active)"}
+                {group.name} {group.isEnded ? `(${t("ended")})` : `(${t("active")})`}
             </option>
           ))}
         </select>
@@ -350,7 +378,7 @@ const Settings = ({ isAdmin }: Props) => {
           <div className="soft-card rounded-[26px] p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="section-title">Lifecycle</p>
+                <p className="section-title">{t("lifecycle")}</p>
                 <h2 className="mt-2 text-xl font-extrabold">{selectedGroupData.name}</h2>
               </div>
               <span
@@ -360,39 +388,39 @@ const Settings = ({ isAdmin }: Props) => {
                     : "bg-[#e8f6ef] text-[#2f8f62]"
                 }`}
               >
-                {selectedGroupData.isEnded ? "Ended" : "Active"}
+                {selectedGroupData.isEnded ? t("ended") : t("active")}
               </span>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-2xl bg-[#f8f3eb] p-3">
-                <p className="text-[#7b6a56]">Start Month</p>
+                  <p className="text-[#7b6a56]">{t("start_month")}</p>
                 <p className="mt-1 font-bold">
                   {formatMonthLabel(getMonthStartDate(selectedGroupData.startDate))}
                 </p>
               </div>
               <div className="rounded-2xl bg-[#f8f3eb] p-3">
-                <p className="text-[#7b6a56]">Duration</p>
+                  <p className="text-[#7b6a56]">{t("duration")}</p>
                 <p className="mt-1 font-bold">{selectedGroupData.duration} months</p>
               </div>
               <div className="rounded-2xl bg-[#f8f3eb] p-3">
-                <p className="text-[#7b6a56]">Total Amount</p>
+                  <p className="text-[#7b6a56]">{t("total_amount")}</p>
                 <p className="mt-1 font-bold">
                   Rs. {Number(selectedGroupData.totalAmount).toLocaleString("en-IN")}
                 </p>
               </div>
               <div className="rounded-2xl bg-[#f8f3eb] p-3">
-                <p className="text-[#7b6a56]">Member Limit</p>
+                  <p className="text-[#7b6a56]">{t("member_limit")}</p>
                 <p className="mt-1 font-bold">{selectedGroupData.memberLimit}</p>
               </div>
             </div>
           </div>
 
           <div className="soft-card rounded-[26px] p-5">
-            <p className="section-title">Export</p>
-            <h3 className="mt-2 text-lg font-extrabold">Current month PDF report</h3>
+            <p className="section-title">{t("export")}</p>
+            <h3 className="mt-2 text-lg font-extrabold">{t("pdf_report")}</h3>
             <p className="mt-2 text-sm text-[#7b6a56]">
-              Export paid, pending, and the current month winner as a print-ready PDF.
+              {t("export_desc")}
             </p>
             <div className="mt-3 rounded-2xl bg-[#f8f3eb] p-3 text-sm text-[#6f604c]">
               {currentMonthLabel || `M${currentMonthNumber}`}
@@ -402,20 +430,20 @@ const Settings = ({ isAdmin }: Props) => {
               disabled={isExporting}
               className="pill-button mt-4 w-full bg-[#3558a8] text-white disabled:opacity-50"
             >
-              {isExporting ? "Preparing PDF..." : "Export PDF"}
+              {isExporting ? t("preparing_pdf") : t("export_pdf")}
             </button>
             <button
               onClick={handleShareToWhatsApp}
               disabled={isSharing}
               className="pill-button mt-3 w-full bg-[#2f8f62] text-white disabled:opacity-50"
             >
-              {isSharing ? "Preparing WhatsApp..." : "Share to WhatsApp"}
+              {isSharing ? t("preparing_whatsapp") : t("share_whatsapp")}
             </button>
           </div>
 
           <div className="soft-card rounded-[26px] p-5">
-            <p className="section-title">Start Month</p>
-            <h3 className="mt-2 text-lg font-extrabold">Move the chit calendar</h3>
+            <p className="section-title">{t("start_month")}</p>
+            <h3 className="mt-2 text-lg font-extrabold">{t("move_calendar")}</h3>
             <p className="mt-2 text-sm text-[#7b6a56]">
               Dashboard months will realign from this value.
             </p>
@@ -434,15 +462,15 @@ const Settings = ({ isAdmin }: Props) => {
               disabled={isSaving}
               className="pill-button mt-4 w-full bg-[#c75c2a] text-white disabled:opacity-60"
             >
-              {isSaving ? "Saving..." : "Save Start Month"}
+              {isSaving ? t("saving") : t("save_start_month")}
             </button>
           </div>
 
           <div className="soft-card rounded-[26px] p-5">
-            <p className="section-title">Close Chit</p>
-            <h3 className="mt-2 text-lg font-extrabold">End this group</h3>
+            <p className="section-title">{t("close_chit")}</p>
+            <h3 className="mt-2 text-lg font-extrabold">{t("end_group")}</h3>
             <p className="mt-2 text-sm text-[#7b6a56]">
-              Use this when a chit is completed and you want to keep it as history.
+              {t("close_chit_desc")}
             </p>
             <button
               onClick={handleEndGroup}
@@ -450,26 +478,26 @@ const Settings = ({ isAdmin }: Props) => {
               className="pill-button mt-4 w-full bg-[#2f2419] text-white disabled:opacity-50"
             >
               {selectedGroupData.isEnded
-                ? "This chit is already ended"
+                ? t("already_ended")
                 : isEnding
-                  ? "Ending..."
-                  : "End This Chit"}
+                  ? t("ending")
+                  : t("end_this_chit")}
             </button>
           </div>
         </div>
       )}
 
       <div className="glass-card rounded-[28px] p-5">
-        <p className="section-title">New Group</p>
-        <h2 className="mt-2 text-xl font-extrabold">Start the next chit</h2>
+        <p className="section-title">{t("new_group")}</p>
+        <h2 className="mt-2 text-xl font-extrabold">{t("start_next_chit")}</h2>
         <p className="mt-2 text-sm text-[#7b6a56]">
-          Create a fresh group with its own schedule and start month.
+          {t("new_group_desc")}
         </p>
 
         <div className="mt-4 space-y-3">
           <input
             className="input-surface"
-            placeholder="Group name"
+            placeholder={t("name")}
             value={createForm.name}
             onChange={(e) =>
               setCreateForm((current) => ({ ...current, name: e.target.value }))
@@ -477,7 +505,7 @@ const Settings = ({ isAdmin }: Props) => {
           />
           <input
             className="input-surface"
-            placeholder="Total amount"
+            placeholder={t("total_amount")}
             value={createForm.totalAmount}
             onChange={(e) =>
               setCreateForm((current) => ({ ...current, totalAmount: e.target.value }))
@@ -486,7 +514,7 @@ const Settings = ({ isAdmin }: Props) => {
           <div className="grid grid-cols-2 gap-3">
             <input
               className="input-surface"
-              placeholder="Duration"
+              placeholder={t("duration")}
               value={createForm.duration}
               onChange={(e) =>
                 setCreateForm((current) => ({ ...current, duration: e.target.value }))
@@ -494,7 +522,7 @@ const Settings = ({ isAdmin }: Props) => {
             />
             <input
               className="input-surface"
-              placeholder="Member limit"
+              placeholder={t("member_limit")}
               value={createForm.memberLimit}
               onChange={(e) =>
                 setCreateForm((current) => ({ ...current, memberLimit: e.target.value }))
@@ -514,7 +542,7 @@ const Settings = ({ isAdmin }: Props) => {
             disabled={isCreating || !createForm.name.trim()}
             className="pill-button w-full bg-[#2f8f62] text-white disabled:opacity-60"
           >
-            {isCreating ? "Creating..." : "Create New Group"}
+            {isCreating ? t("creating") : t("create_new_group")}
           </button>
         </div>
       </div>

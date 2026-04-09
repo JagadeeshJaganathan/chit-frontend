@@ -1,5 +1,6 @@
 import { KeyboardEvent, useState } from "react";
 import API from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 type Props = {
   setUser: (user: any) => void;
@@ -9,13 +10,14 @@ const Login = ({ setUser }: Props) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useLanguage();
 
   const handleLogin = async () => {
     const u = username.trim();
     const p = password.trim();
 
     if (!u || !p) {
-      alert("Enter username and password");
+      alert(t("enter_username_password"));
       return;
     }
 
@@ -47,14 +49,14 @@ const Login = ({ setUser }: Props) => {
     <div className="app-shell flex items-center justify-center">
       <div className="glass-card w-full max-w-sm rounded-[32px] p-6">
         <p className="section-title">KLM Chit</p>
-        <h2 className="mt-2 text-[2rem] font-extrabold leading-tight">Login</h2>
+        <h2 className="mt-2 text-[2rem] font-extrabold leading-tight">{t("login")}</h2>
         <p className="mt-2 text-sm text-[#7b6a56]">
           Built for on-the-go admin work and quick member lookup.
         </p>
 
         <div className="mt-6 space-y-3">
           <input
-            placeholder="Username"
+            placeholder={t("username")}
             className="input-surface"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -63,7 +65,7 @@ const Login = ({ setUser }: Props) => {
 
           <input
             type="password"
-            placeholder="Password"
+            placeholder={t("password")}
             className="input-surface"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -76,7 +78,7 @@ const Login = ({ setUser }: Props) => {
           disabled={isLoading}
           className="pill-button mt-5 w-full bg-[#c75c2a] text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLoading ? "Logging in..." : "Login"}
+          {isLoading ? t("logging_in") : t("login")}
         </button>
       </div>
     </div>

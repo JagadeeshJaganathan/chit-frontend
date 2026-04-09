@@ -11,8 +11,8 @@ export const getMonthStartDate = (value?: string) => {
   return parsedDate;
 };
 
-export const formatMonthLabel = (date: Date) =>
-  new Intl.DateTimeFormat("en-US", {
+export const formatMonthLabel = (date: Date, locale = "en-US") =>
+  new Intl.DateTimeFormat(locale, {
     month: "short",
     year: "numeric",
   }).format(date);
@@ -27,7 +27,11 @@ export const getMonthNumberForDate = (startDateValue?: string, duration = 10) =>
   return Math.min(Math.max(monthDifference + 1, 1), duration);
 };
 
-export const getMonthOptions = (startDateValue?: string, duration = 10) =>
+export const getMonthOptions = (
+  startDateValue?: string,
+  duration = 10,
+  locale = "en-US",
+) =>
   Array.from({ length: duration }, (_, i) => {
     const monthNumber = i + 1;
     const optionDate = new Date(getMonthStartDate(startDateValue));
@@ -36,6 +40,6 @@ export const getMonthOptions = (startDateValue?: string, duration = 10) =>
     return {
       value: monthNumber,
       date: optionDate,
-      label: `M${monthNumber} - ${formatMonthLabel(optionDate)}`,
+      label: `M${monthNumber} - ${formatMonthLabel(optionDate, locale)}`,
     };
   });

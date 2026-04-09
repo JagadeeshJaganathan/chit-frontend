@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import API from "../services/api";
 import AddMember from "../components/Addmember";
 import Breadcrumbs from "../components/Breadcrumbs";
+import { useLanguage } from "../context/LanguageContext";
 
 const Members = () => {
   const [groups, setGroups] = useState<any[]>([]);
@@ -13,6 +14,7 @@ const Members = () => {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user.role === "admin";
+  const { t } = useLanguage();
 
   const activeGroups = useMemo(
     () => groups.filter((group) => !group.isEnded),
@@ -76,7 +78,7 @@ const Members = () => {
   if (activeGroups.length === 0) {
     return (
       <div className="space-y-4 fade-in-up">
-        <Breadcrumbs items={["Home", "Members"]} />
+        <Breadcrumbs items={[t("home"), t("members")]} />
         <div className="glass-card rounded-[28px] p-6">
           <p className="section-title">No active groups</p>
           <h1 className="mt-2 text-2xl font-extrabold">Members will appear here</h1>
@@ -90,12 +92,12 @@ const Members = () => {
 
   return (
     <div className="space-y-4 fade-in-up">
-      <Breadcrumbs items={["Home", "Members"]} />
+      <Breadcrumbs items={[t("home"), t("members")]} />
 
       <div className="glass-card rounded-[30px] p-5">
-        <p className="section-title">People</p>
+        <p className="section-title">{t("people")}</p>
         <h1 className="mt-2 text-[1.65rem] font-extrabold leading-tight">
-          Keep your member list clean and ready
+          {t("manage_members")}
         </h1>
         <p className="mt-2 text-sm text-[#7b6a56]">
           Switch groups, add people fast, and update details from your phone.
@@ -117,7 +119,7 @@ const Members = () => {
           <div className="mt-4 rounded-[22px] bg-[#fff7f0] p-4">
             <p className="font-bold">{selectedGroupData.name}</p>
             <p className="mt-1 text-sm text-[#7b6a56]">
-              {members.length} members added so far
+              {members.length} {t("members_in_group")}
             </p>
           </div>
         )}
@@ -132,7 +134,7 @@ const Members = () => {
       <div className="space-y-3">
         {members.length === 0 ? (
           <div className="soft-card rounded-[26px] p-5 text-center">
-            <p className="text-sm text-[#7b6a56]">No members in this group yet.</p>
+            <p className="text-sm text-[#7b6a56]">{t("no_members_group")}</p>
           </div>
         ) : (
           members.map((member: any) => (
@@ -153,13 +155,13 @@ const Members = () => {
                       }}
                       className="pill-button bg-[#e9efff] px-4 py-2 text-sm text-[#3558a8]"
                     >
-                      Edit
+                      {t("edit")}
                     </button>
                     <button
                       onClick={() => deleteMember(member._id)}
                       className="pill-button bg-[#f8dfd7] px-4 py-2 text-sm text-[#b54848]"
                     >
-                      Delete
+                      {t("delete")}
                     </button>
                   </div>
                 )}
@@ -170,13 +172,13 @@ const Members = () => {
                   <input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Name"
+                    placeholder={t("name")}
                     className="input-surface"
                   />
                   <input
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    placeholder="Phone"
+                    placeholder={t("phone")}
                     className="input-surface"
                   />
 
@@ -185,7 +187,7 @@ const Members = () => {
                       onClick={() => setEditId("")}
                       className="pill-button bg-[#efe8dc] px-4 py-2 text-sm text-[#6f604c]"
                     >
-                      Cancel
+                      {t("cancel")}
                     </button>
                     <button
                       onClick={async () => {
@@ -199,7 +201,7 @@ const Members = () => {
                       }}
                       className="pill-button bg-[#2f8f62] px-4 py-2 text-sm text-white"
                     >
-                      Save
+                      {t("save")}
                     </button>
                   </div>
                 </div>

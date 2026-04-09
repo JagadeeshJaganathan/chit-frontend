@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 import { formatMonthLabel, getMonthStartDate } from "../utils/group";
 
 type Props = {
@@ -24,6 +25,7 @@ const WinnerHistory = ({
   disabled,
 }: Props) => {
   const [winners, setWinners] = useState<any[]>([]);
+  const { language, t } = useLanguage();
 
   useEffect(() => {
     if (!groupId) return;
@@ -57,7 +59,7 @@ const WinnerHistory = ({
     return {
       month,
       winner,
-      label: formatMonthLabel(optionDate),
+      label: formatMonthLabel(optionDate, language === "ta" ? "ta-IN" : "en-US"),
     };
   });
 
@@ -65,12 +67,12 @@ const WinnerHistory = ({
     <div>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="section-title">Timeline</p>
-          <h3 className="mt-2 text-lg font-extrabold">Month by month winners</h3>
+          <p className="section-title">{t("timeline")}</p>
+          <h3 className="mt-2 text-lg font-extrabold">{t("month_by_month_winners")}</h3>
         </div>
         {disabled && (
           <span className="rounded-full bg-[#f3eee5] px-3 py-1 text-xs font-bold text-[#7b6a56]">
-            Ended
+            {t("ended")}
           </span>
         )}
       </div>
@@ -89,7 +91,7 @@ const WinnerHistory = ({
                   M{item.month} - {item.label}
                 </p>
                 <p className="mt-1 font-bold">
-                  {item.winner?.memberId?.name || "No winner"}
+                  {item.winner?.memberId?.name || t("no_winner")}
                 </p>
               </div>
 
@@ -98,7 +100,7 @@ const WinnerHistory = ({
                   onClick={() => handleDelete(item.winner._id)}
                   className="pill-button bg-[#f8dfd7] px-4 py-2 text-xs text-[#b54848]"
                 >
-                  Delete
+                  {t("delete")}
                 </button>
               )}
             </div>

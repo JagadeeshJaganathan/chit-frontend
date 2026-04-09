@@ -1,5 +1,6 @@
 import { useState } from "react";
 import API from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 type Props = {
   members: any[];
@@ -21,6 +22,7 @@ const WinnerSelector = ({
   disabled,
 }: Props) => {
   const [selectedMember, setSelectedMember] = useState("");
+  const { t } = useLanguage();
 
   const winnerIds = (winners || []).map((winner) => String(winner.memberId));
   const availableMembers = members.filter(
@@ -30,7 +32,7 @@ const WinnerSelector = ({
   if (currentWinner) {
     return (
       <div className="rounded-[22px] bg-[#ecf7f1] p-4 text-center">
-        <p className="text-sm text-[#5f7a6b]">Winner already selected for this month</p>
+        <p className="text-sm text-[#5f7a6b]">{t("winner_locked")}</p>
         <p className="mt-1 text-lg font-semibold text-[#2f8f62]">
           {currentWinner.name}
         </p>
@@ -41,7 +43,7 @@ const WinnerSelector = ({
   if (disabled) {
     return (
       <div className="rounded-[22px] bg-[#f3eee5] p-4 text-sm text-[#7b6a56]">
-        This chit is ended. Winner selection is locked.
+        {t("already_ended")}
       </div>
     );
   }
@@ -70,9 +72,9 @@ const WinnerSelector = ({
         value={selectedMember}
         onChange={(e) => setSelectedMember(e.target.value)}
       >
-        <option value="">Select Winner</option>
+        <option value="">{t("winner")}</option>
         {availableMembers.length === 0 ? (
-          <option disabled>All members already won</option>
+          <option disabled>{t("no_eligible_members")}</option>
         ) : (
           availableMembers.map((member: any) => (
             <option key={member._id} value={member._id}>
@@ -89,7 +91,7 @@ const WinnerSelector = ({
           selectedMember ? "bg-[#c75c2a]" : "cursor-not-allowed bg-[#d8cabc]"
         }`}
       >
-        Confirm Winner
+        {t("winner")}
       </button>
     </div>
   );

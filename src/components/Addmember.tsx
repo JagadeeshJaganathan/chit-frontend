@@ -1,13 +1,15 @@
 import { useState } from "react";
 import API from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 
 const AddMember = ({ groupId, onSuccess }: any) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const { t } = useLanguage();
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) {
-      alert("Enter member name and phone");
+      alert(`${t("name")} / ${t("phone")}`);
       return;
     }
 
@@ -18,7 +20,7 @@ const AddMember = ({ groupId, onSuccess }: any) => {
         groupId,
       });
 
-      alert("Member added");
+      alert(t("add_member"));
       setName("");
       setPhone("");
       onSuccess();
@@ -29,18 +31,18 @@ const AddMember = ({ groupId, onSuccess }: any) => {
 
   return (
     <div>
-      <p className="section-title">Add Member</p>
-      <h3 className="mt-2 text-xl font-extrabold">Quick add from mobile</h3>
+      <p className="section-title">{t("add_member")}</p>
+      <h3 className="mt-2 text-xl font-extrabold">{t("quick_add_mobile")}</h3>
       <div className="mt-4 space-y-3">
         <input
           className="input-surface"
-          placeholder="Name"
+          placeholder={t("name")}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <input
           className="input-surface"
-          placeholder="Phone"
+          placeholder={t("phone")}
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
@@ -48,7 +50,7 @@ const AddMember = ({ groupId, onSuccess }: any) => {
           className="pill-button w-full bg-[#c75c2a] text-white"
           onClick={handleSubmit}
         >
-          Add Member
+          {t("add_member")}
         </button>
       </div>
     </div>

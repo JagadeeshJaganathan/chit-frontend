@@ -5,6 +5,7 @@ import WinnerSelector from "../components/WinnerSelector";
 import WinnerHistory from "../components/WinnerHistory";
 import Breadcrumbs from "../components/Breadcrumbs";
 import { getMonthNumberForDate, getMonthOptions } from "../utils/group";
+import { useLanguage } from "../context/LanguageContext";
 
 const Dashboard = () => {
   const [groups, setGroups] = useState<any[]>([]);
@@ -23,6 +24,7 @@ const Dashboard = () => {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin";
+  const { language, t } = useLanguage();
   const membersSectionRef = useRef<HTMLDivElement | null>(null);
   const paidSectionRef = useRef<HTMLDivElement | null>(null);
   const pendingSectionRef = useRef<HTMLDivElement | null>(null);
@@ -38,6 +40,7 @@ const Dashboard = () => {
   const monthOptions = getMonthOptions(
     selectedGroupData?.startDate,
     selectedGroupData?.duration || 10,
+    language === "ta" ? "ta-IN" : "en-US",
   );
 
   const loadGroups = useCallback(async () => {
@@ -130,7 +133,7 @@ const Dashboard = () => {
   if (activeGroups.length === 0) {
     return (
       <div className="space-y-4 fade-in-up">
-        <Breadcrumbs items={["Home", "Dashboard"]} />
+        <Breadcrumbs items={[t("home"), "Dashboard"]} />
         <div className="glass-card rounded-[28px] p-6">
           <p className="section-title">No active groups</p>
           <h1 className="mt-2 text-2xl font-extrabold">Nothing live right now</h1>
@@ -142,7 +145,7 @@ const Dashboard = () => {
               onClick={handleLogout}
               className="pill-button mt-5 bg-[#2f2419] text-white"
             >
-              Logout
+              {t("logout")}
             </button>
           )}
         </div>
@@ -152,24 +155,24 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 fade-in-up">
-      <Breadcrumbs items={["Home", "Dashboard"]} />
+      <Breadcrumbs items={[t("home"), "Dashboard"]} />
 
       <div className="glass-card rounded-[32px] p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="section-title">Live Chit</p>
+            <p className="section-title">{t("live_chit")}</p>
             <h1 className="mt-2 text-[1.7rem] font-extrabold leading-tight">
-              Track this month at a glance
+              {t("track_month")}
             </h1>
             <p className="mt-2 text-sm text-[#7b6a56]">
-              Optimized for quick mobile updates during collection.
+              {t("optimized_mobile")}
             </p>
           </div>
           <button
             onClick={handleLogout}
             className="pill-button bg-[#2f2419] px-4 py-2 text-sm text-white"
           >
-            Logout
+            {t("logout")}
           </button>
         </div>
 
@@ -216,7 +219,7 @@ const Dashboard = () => {
 
         {selectedGroupData && (
           <div className="mt-5 rounded-[24px] bg-[#fff7f0] p-4">
-            <p className="section-title">Now Active</p>
+            <p className="section-title">{t("now_active")}</p>
             <div className="mt-2 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-extrabold">{selectedGroupData.name}</h2>
@@ -238,7 +241,7 @@ const Dashboard = () => {
           onClick={() => scrollToSection("members")}
           className="soft-card rounded-[24px] p-4 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.14em] text-[#7b6a56]">Members</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-[#7b6a56]">{t("members_count")}</p>
           <p className="mt-2 text-2xl font-extrabold">{data.totalMembers}</p>
         </button>
         <button
@@ -246,7 +249,7 @@ const Dashboard = () => {
           onClick={() => scrollToSection("paid")}
           className="soft-card rounded-[24px] bg-[#ecf7f1] p-4 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.14em] text-[#5c7e6c]">Paid</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-[#5c7e6c]">{t("paid")}</p>
           <p className="mt-2 text-2xl font-extrabold text-[#2f8f62]">{data.paidCount}</p>
         </button>
         <button
@@ -254,7 +257,7 @@ const Dashboard = () => {
           onClick={() => scrollToSection("pending")}
           className="soft-card rounded-[24px] bg-[#fff1ed] p-4 text-center"
         >
-          <p className="text-xs uppercase tracking-[0.14em] text-[#99685d]">Pending</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-[#99685d]">{t("pending")}</p>
           <p className="mt-2 text-2xl font-extrabold text-[#c75c2a]">
             {data.pendingCount}
           </p>
@@ -264,14 +267,14 @@ const Dashboard = () => {
       <div ref={membersSectionRef} className="soft-card rounded-[28px] p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="section-title">Winner</p>
+            <p className="section-title">{t("winner")}</p>
             <h3 className="mt-2 text-lg font-extrabold">
-              {data.winner?.name || "No winner selected yet"}
+              {data.winner?.name || t("winner_not_selected")}
             </h3>
           </div>
           {data.winner && (
             <span className="rounded-full bg-[#fff2b6] px-3 py-1 text-xs font-bold text-[#7c5a00]">
-              This month
+              {t("this_month")}
             </span>
           )}
         </div>
@@ -293,14 +296,14 @@ const Dashboard = () => {
 
       <div ref={paidSectionRef} className="soft-card rounded-[28px] p-5">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-extrabold">Paid Members</h3>
+          <h3 className="text-lg font-extrabold">{t("paid_members")}</h3>
           <span className="rounded-full bg-[#ecf7f1] px-3 py-1 text-xs font-bold text-[#2f8f62]">
-            {data.paidCount} paid
+            {data.paidCount} {t("paid").toLowerCase()}
           </span>
         </div>
         <div className="mt-4 space-y-3">
           {data.paidMembers.length === 0 ? (
-            <p className="text-sm text-[#7b6a56]">No payments recorded for this month.</p>
+            <p className="text-sm text-[#7b6a56]">{t("no_payments")}</p>
           ) : (
             data.paidMembers.map((member: any) => (
               <div
@@ -310,7 +313,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-bold">{member.name}</p>
-                    <p className="text-sm text-[#7b6a56]">Marked paid</p>
+                    <p className="text-sm text-[#7b6a56]">{t("marked_paid")}</p>
                   </div>
                   {isAdmin && (
                     <button
@@ -328,7 +331,7 @@ const Dashboard = () => {
                       }}
                       className="pill-button bg-[#f8dfd7] px-4 py-2 text-sm text-[#b54848]"
                     >
-                      Undo
+                      {t("undo")}
                     </button>
                   )}
                 </div>
@@ -340,14 +343,14 @@ const Dashboard = () => {
 
       <div ref={pendingSectionRef} className="soft-card rounded-[28px] p-5">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-extrabold">Pending Members</h3>
+          <h3 className="text-lg font-extrabold">{t("pending_members")}</h3>
           <span className="rounded-full bg-[#fff1ed] px-3 py-1 text-xs font-bold text-[#c75c2a]">
-            {data.pendingCount} pending
+            {data.pendingCount} {t("pending").toLowerCase()}
           </span>
         </div>
         <div className="mt-4 space-y-3">
           {data.pendingMembers.length === 0 ? (
-            <p className="text-sm text-[#7b6a56]">Everyone is paid up for this month.</p>
+            <p className="text-sm text-[#7b6a56]">{t("everyone_paid")}</p>
           ) : (
             data.pendingMembers.map((member: any) => (
               <div
@@ -357,7 +360,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-bold">{member.name}</p>
-                    <p className="text-sm text-[#7b6a56]">Awaiting payment</p>
+                    <p className="text-sm text-[#7b6a56]">{t("awaiting_payment")}</p>
                   </div>
                   {isAdmin && selectedGroupData && (
                     <PaymentButton
