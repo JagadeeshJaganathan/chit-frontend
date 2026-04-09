@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import API from "../services/api";
 import PaymentButton from "../components/PaymentButton";
 import WinnerSelector from "../components/WinnerSelector";
@@ -23,6 +23,9 @@ const Dashboard = () => {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin";
+  const membersSectionRef = useRef<HTMLDivElement | null>(null);
+  const paidSectionRef = useRef<HTMLDivElement | null>(null);
+  const pendingSectionRef = useRef<HTMLDivElement | null>(null);
 
   const activeGroups = useMemo(
     () => groups.filter((group) => !group.isEnded),
@@ -87,6 +90,19 @@ const Dashboard = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     window.location.reload();
+  };
+
+  const scrollToSection = (section: "members" | "paid" | "pending") => {
+    const sectionMap = {
+      members: membersSectionRef,
+      paid: paidSectionRef,
+      pending: pendingSectionRef,
+    };
+
+    sectionMap[section].current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   if (!user?.role) {
@@ -188,23 +204,35 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="soft-card rounded-[24px] p-4 text-center">
+        <button
+          type="button"
+          onClick={() => scrollToSection("members")}
+          className="soft-card rounded-[24px] p-4 text-center"
+        >
           <p className="text-xs uppercase tracking-[0.14em] text-[#7b6a56]">Members</p>
           <p className="mt-2 text-2xl font-extrabold">{data.totalMembers}</p>
-        </div>
-        <div className="soft-card rounded-[24px] bg-[#ecf7f1] p-4 text-center">
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollToSection("paid")}
+          className="soft-card rounded-[24px] bg-[#ecf7f1] p-4 text-center"
+        >
           <p className="text-xs uppercase tracking-[0.14em] text-[#5c7e6c]">Paid</p>
           <p className="mt-2 text-2xl font-extrabold text-[#2f8f62]">{data.paidCount}</p>
-        </div>
-        <div className="soft-card rounded-[24px] bg-[#fff1ed] p-4 text-center">
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollToSection("pending")}
+          className="soft-card rounded-[24px] bg-[#fff1ed] p-4 text-center"
+        >
           <p className="text-xs uppercase tracking-[0.14em] text-[#99685d]">Pending</p>
           <p className="mt-2 text-2xl font-extrabold text-[#c75c2a]">
             {data.pendingCount}
           </p>
-        </div>
+        </button>
       </div>
 
-      <div className="soft-card rounded-[28px] p-5">
+      <div ref={membersSectionRef} className="soft-card rounded-[28px] p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="section-title">Winner</p>
@@ -234,7 +262,7 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div className="soft-card rounded-[28px] p-5">
+      <div ref={paidSectionRef} className="soft-card rounded-[28px] p-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-lg font-extrabold">Paid Members</h3>
           <span className="rounded-full bg-[#ecf7f1] px-3 py-1 text-xs font-bold text-[#2f8f62]">
@@ -281,7 +309,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="soft-card rounded-[28px] p-5">
+      <div ref={pendingSectionRef} className="soft-card rounded-[28px] p-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-lg font-extrabold">Pending Members</h3>
           <span className="rounded-full bg-[#fff1ed] px-3 py-1 text-xs font-bold text-[#c75c2a]">
