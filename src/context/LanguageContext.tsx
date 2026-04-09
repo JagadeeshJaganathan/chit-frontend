@@ -103,7 +103,16 @@ type TranslationKey =
   | "english"
   | "tamil"
   | "active"
-  | "ended";
+  | "ended"
+  | "edit_group"
+  | "update_group"
+  | "update_group_desc"
+  | "update_group_button"
+  | "updating"
+  | "delete_group"
+  | "delete_group_desc"
+  | "delete_group_button"
+  | "deleting";
 
 type LanguageContextValue = {
   language: Language;
@@ -207,6 +216,15 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     tamil: "Tamil",
     active: "Active",
     ended: "Ended",
+    edit_group: "Edit Group",
+    update_group: "Update group details",
+    update_group_desc: "Change the selected group's name, amount, duration, or member limit.",
+    update_group_button: "Update Group",
+    updating: "Updating...",
+    delete_group: "Delete Group",
+    delete_group_desc: "Delete this group and remove its members, payments, and winners.",
+    delete_group_button: "Delete This Group",
+    deleting: "Deleting...",
   },
   ta: {
     home: "முகப்பு",
@@ -303,6 +321,15 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     tamil: "தமிழ்",
     active: "செயலில்",
     ended: "முடிந்தது",
+    edit_group: "குழுவை திருத்து",
+    update_group: "குழு விவரங்களை புதுப்பி",
+    update_group_desc: "தேர்ந்தெடுத்த குழுவின் பெயர், தொகை, காலம் அல்லது உறுப்பினர் வரம்பை மாற்றவும்.",
+    update_group_button: "குழுவை புதுப்பி",
+    updating: "புதுப்பிக்கிறது...",
+    delete_group: "குழுவை நீக்கு",
+    delete_group_desc: "இந்த குழுவையும் அதன் உறுப்பினர்கள், கட்டணங்கள், வெற்றியாளர்களையும் நீக்கவும்.",
+    delete_group_button: "இந்த குழுவை நீக்கு",
+    deleting: "நீக்குகிறது...",
   },
 };
 

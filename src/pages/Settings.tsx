@@ -22,6 +22,14 @@ const Settings = ({ isAdmin }: Props) => {
   const [isEnding, setIsEnding] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isUpdatingGroup, setIsUpdatingGroup] = useState(false);
+  const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    totalAmount: "300000",
+    duration: "10",
+    memberLimit: "20",
+  });
   const [createForm, setCreateForm] = useState({
     name: "",
     totalAmount: "300000",
@@ -67,6 +75,12 @@ const Settings = ({ isAdmin }: Props) => {
       ? new Date(selectedGroupData.startDate).toISOString().slice(0, 7)
       : DEFAULT_START_MONTH;
     setStartMonthInput(nextMonth);
+    setEditForm({
+      name: selectedGroupData.name || "",
+      totalAmount: String(selectedGroupData.totalAmount ?? "300000"),
+      duration: String(selectedGroupData.duration ?? "10"),
+      memberLimit: String(selectedGroupData.memberLimit ?? "20"),
+    });
   }, [selectedGroupData]);
 
   const currentMonthNumber = selectedGroupData
@@ -152,6 +166,46 @@ const Settings = ({ isAdmin }: Props) => {
       alert(err.response?.data?.message || "Unable to create group");
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleUpdateGroup = async () => {
+    if (!selectedGroupData) return;
+
+    try {
+      setIsUpdatingGroup(true);
+      await API.patch(`/groups/${selectedGroupData._id}`, {
+        name: editForm.name,
+        totalAmount: Number(editForm.totalAmount),
+        duration: Number(editForm.duration),
+        memberLimit: Number(editForm.memberLimit),
+      });
+      await loadGroups();
+      alert("Group updated successfully");
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Unable to update group");
+    } finally {
+      setIsUpdatingGroup(false);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!selectedGroupData) return;
+
+    const ok = window.confirm(
+      `Delete ${selectedGroupData.name}? This will remove members, payments, and winners too.`,
+    );
+    if (!ok) return;
+
+    try {
+      setIsDeletingGroup(true);
+      await API.delete(`/groups/${selectedGroupData._id}`);
+      await loadGroups();
+      alert("Group deleted successfully");
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Unable to delete group");
+    } finally {
+      setIsDeletingGroup(false);
     }
   };
 
@@ -417,6 +471,66 @@ const Settings = ({ isAdmin }: Props) => {
           </div>
 
           <div className="soft-card rounded-[26px] p-5">
+            <p className="section-title">{t("edit_group")}</p>
+            <h3 className="mt-2 text-lg font-extrabold">{t("update_group")}</h3>
+            <p className="mt-2 text-sm text-[#7b6a56]">
+              {t("update_group_desc")}
+            </p>
+            <div className="mt-4 space-y-3">
+              <input
+                className="input-surface"
+                placeholder={t("name")}
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm((current) => ({ ...current, name: e.target.value }))
+                }
+              />
+              <input
+                className="input-surface"
+                placeholder={t("total_amount")}
+                value={editForm.totalAmount}
+                onChange={(e) =>
+                  setEditForm((current) => ({
+                    ...current,
+                    totalAmount: e.target.value,
+                  }))
+                }
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  className="input-surface"
+                  placeholder={t("duration")}
+                  value={editForm.duration}
+                  onChange={(e) =>
+                    setEditForm((current) => ({
+                      ...current,
+                      duration: e.target.value,
+                    }))
+                  }
+                />
+                <input
+                  className="input-surface"
+                  placeholder={t("member_limit")}
+                  value={editForm.memberLimit}
+                  onChange={(e) =>
+                    setEditForm((current) => ({
+                      ...current,
+                      memberLimit: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleUpdateGroup}
+              disabled={isUpdatingGroup || !editForm.name.trim()}
+              className="pill-button mt-4 w-full bg-[#c75c2a] text-white disabled:opacity-60"
+            >
+              {isUpdatingGroup ? t("updating") : t("update_group_button")}
+            </button>
+          </div>
+
+          <div className="soft-card rounded-[26px] p-5">
             <p className="section-title">{t("export")}</p>
             <h3 className="mt-2 text-lg font-extrabold">{t("pdf_report")}</h3>
             <p className="mt-2 text-sm text-[#7b6a56]">
@@ -483,6 +597,19 @@ const Settings = ({ isAdmin }: Props) => {
                   ? t("ending")
                   : t("end_this_chit")}
             </button>
+            <div className="mt-5 rounded-[20px] bg-[#fff0ec] p-4">
+              <p className="section-title text-[#b54848]">{t("delete_group")}</p>
+              <p className="mt-2 text-sm text-[#7b6a56]">
+                {t("delete_group_desc")}
+              </p>
+              <button
+                onClick={handleDeleteGroup}
+                disabled={isDeletingGroup}
+                className="pill-button mt-4 w-full bg-[#b54848] text-white disabled:opacity-50"
+              >
+                {isDeletingGroup ? t("deleting") : t("delete_group_button")}
+              </button>
+            </div>
           </div>
         </div>
       )}
