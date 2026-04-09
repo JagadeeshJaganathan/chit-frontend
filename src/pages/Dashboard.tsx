@@ -40,12 +40,13 @@ const Dashboard = () => {
     pendingMembers: [],
     winner: null,
     allWinners: [],
+    currentMonth: 1,
   });
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin";
 
-  // 🔹 Load groups
+  /* ================= LOAD GROUPS ================= */
   useEffect(() => {
     API.get("/groups")
       .then((res) => {
@@ -55,23 +56,28 @@ const Dashboard = () => {
           const first = res.data[0];
           setSelectedGroup(first._id);
 
-          // ✅ generate months
           const list = generateChitMonths(first.startDate, first.duration);
           setMonthsList(list);
-
-          setMonth(1);
         }
       })
       .catch(console.log);
   }, []);
 
-  // 🔹 Load dashboard (NO useCallback)
+  /* ================= LOAD DASHBOARD ================= */
   const loadDashboard = async () => {
     if (!selectedGroup) return;
 
     try {
       const res = await API.get(`/dashboard/${selectedGroup}/${month}`);
-      setData(res.data);
+      const response = res.data;
+
+      setData(response);
+
+      // 🔥 AUTO SELECT CURRENT MONTH (ONLY FIRST TIME)
+      if (month === 1) {
+        setMonth(response.currentMonth);
+      }
+
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.log(err);
@@ -82,7 +88,7 @@ const Dashboard = () => {
     loadDashboard();
   }, [selectedGroup, month]);
 
-  // 🔐 Logout
+  /* ================= LOGOUT ================= */
   const handleLogout = () => {
     localStorage.removeItem("user");
     window.location.reload();
@@ -140,14 +146,18 @@ const Dashboard = () => {
             ))}
           </select>
 
-          {/* Month (FIXED 🔥) */}
+          {/* Month */}
           <select
             className="flex-1 border p-2 rounded-xl bg-white"
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
           >
             {monthsList.map((m) => (
-              <option key={m.value} value={m.value}>
+              <option
+                key={m.value}
+                value={m.value}
+                disabled={m.value > data.currentMonth} // 🔥 disable future
+              >
                 {m.label}
               </option>
             ))}
