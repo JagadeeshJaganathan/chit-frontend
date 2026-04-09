@@ -20,6 +20,7 @@ const Settings = ({ isAdmin }: Props) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: "",
     totalAmount: "300000",
@@ -268,6 +269,46 @@ const Settings = ({ isAdmin }: Props) => {
     }
   };
 
+  const handleShareToWhatsApp = async () => {
+    if (!selectedGroupData) return;
+
+    try {
+      setIsSharing(true);
+
+      const res = await API.get(
+        `/dashboard/${selectedGroupData._id}/${currentMonthNumber}`,
+      );
+
+      const paidMembers = (res.data.paidMembers || []).map(
+        (member: any, index: number) => `${index + 1}. ${member.name} (${member.phone ?? "-"})`,
+      );
+      const pendingMembers = (res.data.pendingMembers || []).map(
+        (member: any, index: number) => `${index + 1}. ${member.name} (${member.phone ?? "-"})`,
+      );
+      const winnerName = res.data.winner?.name || "No winner selected";
+
+      const message = [
+        `*${selectedGroupData.name}*`,
+        `${currentMonthLabel || `M${currentMonthNumber}`}`,
+        "",
+        `*Winner:* ${winnerName}`,
+        "",
+        "*Paid Members:*",
+        ...(paidMembers.length > 0 ? paidMembers : ["No paid members"]),
+        "",
+        "*Pending Members:*",
+        ...(pendingMembers.length > 0 ? pendingMembers : ["No pending members"]),
+      ].join("\n");
+
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Unable to prepare WhatsApp share");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
     <div className="space-y-4 fade-in-up">
       <Breadcrumbs items={["Home", "Admin", "Settings"]} />
@@ -406,6 +447,13 @@ const Settings = ({ isAdmin }: Props) => {
               className="pill-button mt-4 w-full bg-[#3558a8] text-white disabled:opacity-50"
             >
               {isExporting ? "Preparing PDF..." : "Export PDF"}
+            </button>
+            <button
+              onClick={handleShareToWhatsApp}
+              disabled={isSharing}
+              className="pill-button mt-3 w-full bg-[#2f8f62] text-white disabled:opacity-50"
+            >
+              {isSharing ? "Preparing WhatsApp..." : "Share to WhatsApp"}
             </button>
           </div>
         </div>
