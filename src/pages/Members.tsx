@@ -21,7 +21,9 @@ const Members = () => {
     [groups],
   );
 
-  const selectedGroupData = activeGroups.find((group) => group._id === selectedGroup);
+  const selectedGroupData = activeGroups.find(
+    (group) => group._id === selectedGroup,
+  );
 
   const loadGroups = useCallback(async () => {
     try {
@@ -36,7 +38,9 @@ const Members = () => {
       }
 
       setSelectedGroup((currentValue) => {
-        const existing = nextGroups.find((group: any) => group._id === currentValue);
+        const existing = nextGroups.find(
+          (group: any) => group._id === currentValue,
+        );
         return existing?._id || nextGroups[0]._id;
       });
     } catch (err) {
@@ -81,7 +85,9 @@ const Members = () => {
         <Breadcrumbs items={[t("home"), t("members")]} />
         <div className="glass-card rounded-[28px] p-6">
           <p className="section-title">No active groups</p>
-          <h1 className="mt-2 text-2xl font-extrabold">Members will appear here</h1>
+          <h1 className="mt-2 text-2xl font-extrabold">
+            Members will appear here
+          </h1>
           <p className="mt-2 text-sm text-[#7b6a56]">
             Create a new chit in Settings before adding members.
           </p>
@@ -100,7 +106,7 @@ const Members = () => {
           {t("manage_members")}
         </h1>
         <p className="mt-2 text-sm text-[#7b6a56]">
-          Switch groups, add people fast, and update details from your phone.
+          Switch groups, add people fast, and update details.
         </p>
 
         <select

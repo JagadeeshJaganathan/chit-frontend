@@ -49,9 +49,11 @@ const Login = ({ setUser }: Props) => {
     <div className="app-shell flex items-center justify-center">
       <div className="glass-card w-full max-w-sm rounded-[32px] p-6">
         <p className="section-title">KLM Chit</p>
-        <h2 className="mt-2 text-[2rem] font-extrabold leading-tight">{t("login")}</h2>
+        <h2 className="mt-2 text-[2rem] font-extrabold leading-tight">
+          {t("login")}
+        </h2>
         <p className="mt-2 text-sm text-[#7b6a56]">
-          Built for on-the-go admin work and quick member lookup.
+          Built for maintaining chit groups and managing members.
         </p>
 
         <div className="mt-6 space-y-3">
