@@ -1,46 +1,16 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import API from "../services/api";
 import PaymentButton from "../components/PaymentButton";
 import WinnerSelector from "../components/WinnerSelector";
 import WinnerHistory from "../components/WinnerHistory";
-
-const DEFAULT_START_MONTH = "2025-12";
-
-const getMonthStartDate = (value?: string) => {
-  const normalizedValue = value || `${DEFAULT_START_MONTH}-01`;
-  const parsedDate = new Date(normalizedValue);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return new Date(`${DEFAULT_START_MONTH}-01`);
-  }
-
-  return parsedDate;
-};
-
-const formatMonthLabel = (date: Date) =>
-  new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    year: "numeric",
-  }).format(date);
-
-const getMonthNumberForDate = (startDateValue?: string, duration = 10) => {
-  const startDate = getMonthStartDate(startDateValue);
-  const now = new Date();
-  const monthDifference =
-    (now.getFullYear() - startDate.getFullYear()) * 12 +
-    (now.getMonth() - startDate.getMonth());
-
-  return Math.min(Math.max(monthDifference + 1, 1), duration);
-};
+import Breadcrumbs from "../components/Breadcrumbs";
+import { getMonthNumberForDate, getMonthOptions } from "../utils/group";
 
 const Dashboard = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [month, setMonth] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [startMonthInput, setStartMonthInput] = useState(DEFAULT_START_MONTH);
-  const [isSavingStartMonth, setIsSavingStartMonth] = useState(false);
-
   const [data, setData] = useState<any>({
     totalMembers: 0,
     paidCount: 0,
@@ -53,35 +23,32 @@ const Dashboard = () => {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin";
-  const selectedGroupData = groups.find((group) => group._id === selectedGroup);
-  const totalMonths = selectedGroupData?.duration || 10;
 
-  const monthOptions = Array.from({ length: totalMonths }, (_, i) => {
-    const monthNumber = i + 1;
-    const optionDate = new Date(getMonthStartDate(selectedGroupData?.startDate));
-    optionDate.setMonth(optionDate.getMonth() + i);
+  const activeGroups = useMemo(
+    () => groups.filter((group) => !group.isEnded),
+    [groups],
+  );
 
-    return {
-      value: monthNumber,
-      label: `M${monthNumber} - ${formatMonthLabel(optionDate)}`,
-    };
-  });
+  const selectedGroupData = activeGroups.find((group) => group._id === selectedGroup);
+  const monthOptions = getMonthOptions(
+    selectedGroupData?.startDate,
+    selectedGroupData?.duration || 10,
+  );
 
-  // 🔹 Load groups
   const loadGroups = useCallback(async () => {
     try {
       const res = await API.get("/groups");
+      const nextGroups = res.data.filter((group: any) => !group.isEnded);
       setGroups(res.data);
 
-      if (res.data.length === 0) {
+      if (nextGroups.length === 0) {
         setSelectedGroup("");
         return;
       }
 
-      setSelectedGroup((currentGroupId: string) => {
-        const nextGroup =
-          res.data.find((group: any) => group._id === currentGroupId) || res.data[0];
-        return nextGroup._id;
+      setSelectedGroup((currentValue) => {
+        const nextGroup = nextGroups.find((group: any) => group._id === currentValue);
+        return nextGroup?._id || nextGroups[0]._id;
       });
     } catch (err) {
       console.log(err);
@@ -95,20 +62,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (!selectedGroupData) return;
 
-    const nextMonth = getMonthNumberForDate(
-      selectedGroupData.startDate,
-      selectedGroupData.duration,
-    );
-
-    setMonth(nextMonth);
-    setStartMonthInput(
-      selectedGroupData.startDate
-        ? new Date(selectedGroupData.startDate).toISOString().slice(0, 7)
-        : DEFAULT_START_MONTH,
+    setMonth(
+      getMonthNumberForDate(selectedGroupData.startDate, selectedGroupData.duration),
     );
   }, [selectedGroupData]);
 
-  // 🔹 Load dashboard
   const loadDashboard = useCallback(async () => {
     if (!selectedGroup) return;
 
@@ -119,80 +77,87 @@ const Dashboard = () => {
     } catch (err) {
       console.log(err);
     }
-  }, [selectedGroup, month]);
+  }, [month, selectedGroup]);
 
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
 
-  // 🔐 Logout
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     window.location.reload();
   };
 
-  const handleStartMonthSave = async () => {
-    if (!selectedGroup) return;
-
-    try {
-      setIsSavingStartMonth(true);
-
-      await API.patch(`/groups/${selectedGroup}`, {
-        startDate: `${startMonthInput}-01`,
-      });
-
-      await loadGroups();
-    } catch (err) {
-      console.log(err);
-      alert("Unable to update start month");
-    } finally {
-      setIsSavingStartMonth(false);
-    }
-  };
-
-  // 🔐 AFTER hooks (important)
   if (!user?.role) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <p>Please login</p>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-4 pb-20">
-      <div className="max-w-md mx-auto space-y-4">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">📊 Chit Dashboard</h1>
+  if (activeGroups.length === 0) {
+    return (
+      <div className="space-y-4 fade-in-up">
+        <Breadcrumbs items={["Home", "Dashboard"]} />
+        <div className="glass-card rounded-[28px] p-6">
+          <p className="section-title">No active groups</p>
+          <h1 className="mt-2 text-2xl font-extrabold">Nothing live right now</h1>
+          <p className="mt-2 text-sm text-[#7b6a56]">
+            Ended chits stay in history. Create a new group from Settings to continue.
+          </p>
+          {isAdmin && (
+            <button
+              onClick={handleLogout}
+              className="pill-button mt-5 bg-[#2f2419] text-white"
+            >
+              Logout
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
+  return (
+    <div className="space-y-4 fade-in-up">
+      <Breadcrumbs items={["Home", "Dashboard"]} />
+
+      <div className="glass-card rounded-[32px] p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="section-title">Live Chit</p>
+            <h1 className="mt-2 text-[1.7rem] font-extrabold leading-tight">
+              Track this month at a glance
+            </h1>
+            <p className="mt-2 text-sm text-[#7b6a56]">
+              Optimized for quick mobile updates during collection.
+            </p>
+          </div>
           <button
             onClick={handleLogout}
-            className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-sm active:scale-95"
+            className="pill-button bg-[#2f2419] px-4 py-2 text-sm text-white"
           >
             Logout
           </button>
         </div>
 
-        {/* Controls */}
-        <div className="flex gap-2">
+        <div className="mt-5 grid grid-cols-1 gap-3">
           <select
-            className="flex-1 border p-2 rounded-xl bg-white"
+            className="input-surface"
             value={selectedGroup}
-            onChange={(e) => {
-              setSelectedGroup(e.target.value);
-              setMonth(1);
-            }}
+            onChange={(e) => setSelectedGroup(e.target.value)}
           >
-            {groups.map((g) => (
-              <option key={g._id} value={g._id}>
-                {g.name}
+            {activeGroups.map((group: any) => (
+              <option key={group._id} value={group._id}>
+                {group.name}
               </option>
             ))}
           </select>
 
           <select
-            className="flex-1 border p-2 rounded-xl bg-white"
+            className="input-surface"
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
           >
@@ -205,124 +170,57 @@ const Dashboard = () => {
         </div>
 
         {selectedGroupData && (
-          <div className="bg-white p-3 rounded-xl shadow space-y-3">
-            <div className="flex items-center justify-between gap-3">
+          <div className="mt-5 rounded-[24px] bg-[#fff7f0] p-4">
+            <p className="section-title">Now Active</p>
+            <div className="mt-2 flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-gray-700">Chit Start Month</p>
-                <p className="text-xs text-gray-500">
-                  Current month: {monthOptions.find((option) => option.value === month)?.label}
+                <h2 className="text-lg font-extrabold">{selectedGroupData.name}</h2>
+                <p className="text-sm text-[#7b6a56]">
+                  {monthOptions.find((option) => option.value === month)?.label}
                 </p>
               </div>
-
-              {isAdmin ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="month"
-                    value={startMonthInput}
-                    onChange={(e) => setStartMonthInput(e.target.value)}
-                    className="border p-2 rounded-lg bg-white"
-                  />
-                  <button
-                    onClick={handleStartMonthSave}
-                    disabled={isSavingStartMonth}
-                    className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm disabled:opacity-60"
-                  >
-                    {isSavingStartMonth ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              ) : (
-                <span className="text-sm font-medium text-blue-700">
-                  {formatMonthLabel(getMonthStartDate(selectedGroupData.startDate))}
-                </span>
-              )}
+              <div className="rounded-full bg-[#ffe4d4] px-3 py-1 text-xs font-bold text-[#a1441e]">
+                {selectedGroupData.duration} months
+              </div>
             </div>
           </div>
         )}
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-white p-3 rounded-xl text-center shadow">
-            <p className="text-xs">Total</p>
-            <p className="font-bold">{data.totalMembers}</p>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="soft-card rounded-[24px] p-4 text-center">
+          <p className="text-xs uppercase tracking-[0.14em] text-[#7b6a56]">Members</p>
+          <p className="mt-2 text-2xl font-extrabold">{data.totalMembers}</p>
+        </div>
+        <div className="soft-card rounded-[24px] bg-[#ecf7f1] p-4 text-center">
+          <p className="text-xs uppercase tracking-[0.14em] text-[#5c7e6c]">Paid</p>
+          <p className="mt-2 text-2xl font-extrabold text-[#2f8f62]">{data.paidCount}</p>
+        </div>
+        <div className="soft-card rounded-[24px] bg-[#fff1ed] p-4 text-center">
+          <p className="text-xs uppercase tracking-[0.14em] text-[#99685d]">Pending</p>
+          <p className="mt-2 text-2xl font-extrabold text-[#c75c2a]">
+            {data.pendingCount}
+          </p>
+        </div>
+      </div>
+
+      <div className="soft-card rounded-[28px] p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="section-title">Winner</p>
+            <h3 className="mt-2 text-lg font-extrabold">
+              {data.winner?.name || "No winner selected yet"}
+            </h3>
           </div>
-          <div className="bg-green-100 p-3 rounded-xl text-center">
-            <p className="text-xs">Paid</p>
-            <p className="font-bold">{data.paidCount}</p>
-          </div>
-          <div className="bg-red-100 p-3 rounded-xl text-center">
-            <p className="text-xs">Pending</p>
-            <p className="font-bold">{data.pendingCount}</p>
-          </div>
+          {data.winner && (
+            <span className="rounded-full bg-[#fff2b6] px-3 py-1 text-xs font-bold text-[#7c5a00]">
+              This month
+            </span>
+          )}
         </div>
 
-        {/* Paid Members */}
-        <div className="bg-white p-3 rounded-xl shadow">
-          <h3 className="text-sm font-semibold text-green-700 mb-2">
-            Paid Members
-          </h3>
-
-          {data.paidMembers.map((m: any) => (
-            <div
-              key={m._id}
-              className="flex justify-between items-center border-b py-1 text-sm"
-            >
-              <span>{m.name}</span>
-
-              <div className="flex gap-2 items-center">
-                <span className="bg-green-100 px-2 rounded text-xs">Paid</span>
-
-                {isAdmin && (
-                  <button
-                    onClick={async () => {
-                      const ok = window.confirm("Revert payment?");
-                      if (!ok) return;
-
-                      await API.post("/payments/revert", {
-                        memberId: m._id,
-                        groupId: selectedGroup,
-                        month,
-                      });
-
-                      loadDashboard();
-                    }}
-                    className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs"
-                  >
-                    Undo
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Pending Members */}
-        <div className="bg-white p-3 rounded-xl shadow">
-          <h3 className="text-sm font-semibold text-red-600 mb-2">
-            Pending Members
-          </h3>
-
-          {data.pendingMembers.map((m: any) => (
-            <div
-              key={m._id}
-              className="flex justify-between items-center border-b py-1 text-sm"
-            >
-              <span>{m.name}</span>
-
-              {isAdmin && (
-                <PaymentButton
-                  memberId={m._id}
-                  groupId={selectedGroup}
-                  month={month}
-                  onSuccess={loadDashboard}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Winner Section */}
-        <div className="bg-white p-4 rounded-xl shadow space-y-3">
-          {isAdmin && (
+        {isAdmin && selectedGroupData && (
+          <div className="mt-4">
             <WinnerSelector
               members={[...data.paidMembers, ...data.pendingMembers]}
               groupId={selectedGroup}
@@ -330,28 +228,107 @@ const Dashboard = () => {
               onSuccess={loadDashboard}
               currentWinner={data.winner}
               winners={data.allWinners || []}
+              disabled={selectedGroupData.isEnded}
             />
-          )}
-
-          <div className="text-center">
-            <span className="bg-yellow-100 px-3 py-1 rounded text-sm font-semibold">
-              🏆 {data.winner?.name || "No Winner"}
-            </span>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Timeline */}
-        <div className="bg-white p-3 rounded-xl shadow">
-          <WinnerHistory
-            groupId={selectedGroup}
-            currentMonth={month}
-            totalMonths={totalMonths}
-            refreshKey={refreshKey}
-            isAdmin={isAdmin}
-            onRefresh={loadDashboard}
-            startDate={selectedGroupData?.startDate}
-          />
+      <div className="soft-card rounded-[28px] p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-lg font-extrabold">Paid Members</h3>
+          <span className="rounded-full bg-[#ecf7f1] px-3 py-1 text-xs font-bold text-[#2f8f62]">
+            {data.paidCount} paid
+          </span>
         </div>
+        <div className="mt-4 space-y-3">
+          {data.paidMembers.length === 0 ? (
+            <p className="text-sm text-[#7b6a56]">No payments recorded for this month.</p>
+          ) : (
+            data.paidMembers.map((member: any) => (
+              <div
+                key={member._id}
+                className="rounded-[22px] bg-[#f9f5ee] p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold">{member.name}</p>
+                    <p className="text-sm text-[#7b6a56]">Marked paid</p>
+                  </div>
+                  {isAdmin && (
+                    <button
+                      onClick={async () => {
+                        const ok = window.confirm("Revert payment?");
+                        if (!ok) return;
+
+                        await API.post("/payments/revert", {
+                          memberId: member._id,
+                          groupId: selectedGroup,
+                          month,
+                        });
+
+                        loadDashboard();
+                      }}
+                      className="pill-button bg-[#f8dfd7] px-4 py-2 text-sm text-[#b54848]"
+                    >
+                      Undo
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="soft-card rounded-[28px] p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-lg font-extrabold">Pending Members</h3>
+          <span className="rounded-full bg-[#fff1ed] px-3 py-1 text-xs font-bold text-[#c75c2a]">
+            {data.pendingCount} pending
+          </span>
+        </div>
+        <div className="mt-4 space-y-3">
+          {data.pendingMembers.length === 0 ? (
+            <p className="text-sm text-[#7b6a56]">Everyone is paid up for this month.</p>
+          ) : (
+            data.pendingMembers.map((member: any) => (
+              <div
+                key={member._id}
+                className="rounded-[22px] bg-[#f9f5ee] p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold">{member.name}</p>
+                    <p className="text-sm text-[#7b6a56]">Awaiting payment</p>
+                  </div>
+                  {isAdmin && selectedGroupData && (
+                    <PaymentButton
+                      memberId={member._id}
+                      groupId={selectedGroup}
+                      month={month}
+                      onSuccess={loadDashboard}
+                      disabled={selectedGroupData.isEnded}
+                    />
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="soft-card rounded-[28px] p-4">
+        <WinnerHistory
+          groupId={selectedGroup}
+          currentMonth={month}
+          totalMonths={selectedGroupData?.duration || 10}
+          refreshKey={refreshKey}
+          isAdmin={isAdmin}
+          onRefresh={loadDashboard}
+          startDate={selectedGroupData?.startDate}
+          disabled={selectedGroupData?.isEnded}
+        />
       </div>
     </div>
   );

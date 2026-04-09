@@ -5,10 +5,19 @@ type Props = {
   groupId: string;
   month: number;
   onSuccess: () => void;
+  disabled?: boolean;
 };
 
-const PaymentButton = ({ memberId, groupId, month, onSuccess }: Props) => {
+const PaymentButton = ({
+  memberId,
+  groupId,
+  month,
+  onSuccess,
+  disabled,
+}: Props) => {
   const handlePayment = async () => {
+    if (disabled) return;
+
     try {
       await API.post("/payments", {
         memberId,
@@ -16,7 +25,7 @@ const PaymentButton = ({ memberId, groupId, month, onSuccess }: Props) => {
         month,
       });
 
-      alert("Payment successful 💰");
+      alert("Payment successful");
       onSuccess();
     } catch (err: any) {
       alert(err.response?.data?.message || "Payment error");
@@ -26,9 +35,10 @@ const PaymentButton = ({ memberId, groupId, month, onSuccess }: Props) => {
   return (
     <button
       onClick={handlePayment}
-      className="bg-blue-500 text-white px-3 py-1 rounded-lg active:scale-95 transition"
+      disabled={disabled}
+      className="pill-button bg-[#2f8f62] px-4 py-2 text-sm text-white disabled:opacity-50"
     >
-      Paid
+      Mark Paid
     </button>
   );
 };

@@ -8,6 +8,7 @@ type Props = {
   onSuccess: () => void;
   currentWinner: any;
   winners: any[];
+  disabled?: boolean;
 };
 
 const WinnerSelector = ({
@@ -17,31 +18,34 @@ const WinnerSelector = ({
   onSuccess,
   currentWinner,
   winners,
+  disabled,
 }: Props) => {
   const [selectedMember, setSelectedMember] = useState("");
 
-  // 🔥 FILTER MEMBERS (REMOVE ALREADY WON)
-  const winnerIds = (winners || []).map((w) => String(w.memberId));
-
+  const winnerIds = (winners || []).map((winner) => String(winner.memberId));
   const availableMembers = members.filter(
-    (m) => !winnerIds.includes(String(m._id)),
+    (member) => !winnerIds.includes(String(member._id)),
   );
 
-  // ✅ IF WINNER EXISTS → SHOW ONLY RESULT
   if (currentWinner) {
     return (
-      <div className="bg-green-50 border border-green-200 p-4 rounded-xl text-center">
-        <p className="text-sm text-gray-600">
-          Winner already selected for this month
-        </p>
-        <p className="font-semibold text-green-700 text-lg mt-1">
-          🏆 {currentWinner.name}
+      <div className="rounded-[22px] bg-[#ecf7f1] p-4 text-center">
+        <p className="text-sm text-[#5f7a6b]">Winner already selected for this month</p>
+        <p className="mt-1 text-lg font-semibold text-[#2f8f62]">
+          {currentWinner.name}
         </p>
       </div>
     );
   }
 
-  // 🔹 SELECT WINNER
+  if (disabled) {
+    return (
+      <div className="rounded-[22px] bg-[#f3eee5] p-4 text-sm text-[#7b6a56]">
+        This chit is ended. Winner selection is locked.
+      </div>
+    );
+  }
+
   const handleSelectWinner = async () => {
     if (!selectedMember) return;
 
@@ -53,7 +57,7 @@ const WinnerSelector = ({
       });
 
       setSelectedMember("");
-      onSuccess(); // 🔥 refresh
+      onSuccess();
     } catch (err: any) {
       alert(err.response?.data?.message || "Error selecting winner");
     }
@@ -61,33 +65,28 @@ const WinnerSelector = ({
 
   return (
     <div className="space-y-3">
-      {/* Dropdown */}
       <select
-        className="w-full border p-3 rounded-xl bg-white shadow-sm"
+        className="input-surface"
         value={selectedMember}
         onChange={(e) => setSelectedMember(e.target.value)}
       >
         <option value="">Select Winner</option>
-
         {availableMembers.length === 0 ? (
           <option disabled>All members already won</option>
         ) : (
-          availableMembers.map((m: any) => (
-            <option key={m._id} value={m._id}>
-              {m.name}
+          availableMembers.map((member: any) => (
+            <option key={member._id} value={member._id}>
+              {member.name}
             </option>
           ))
         )}
       </select>
 
-      {/* Button */}
       <button
         onClick={handleSelectWinner}
         disabled={!selectedMember}
-        className={`w-full py-2 rounded-xl text-white font-medium transition ${
-          selectedMember
-            ? "bg-blue-500 active:scale-95"
-            : "bg-gray-300 cursor-not-allowed"
+        className={`pill-button w-full text-white ${
+          selectedMember ? "bg-[#c75c2a]" : "cursor-not-allowed bg-[#d8cabc]"
         }`}
       >
         Confirm Winner
