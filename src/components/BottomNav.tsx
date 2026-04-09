@@ -6,6 +6,7 @@ type Tab = {
 const TAB_ICONS: Record<string, string> = {
   dashboard: "Home",
   members: "Crew",
+  shuffle: "Draw",
   settings: "Tools",
 };
 

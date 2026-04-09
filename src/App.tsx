@@ -4,6 +4,7 @@ import BottomNav from "./components/BottomNav";
 import Login from "./pages/login";
 import Members from "./pages/Members";
 import Settings from "./pages/Settings";
+import Shuffle from "./pages/Shuffle";
 
 function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -19,13 +20,19 @@ function App() {
   const tabs = [
     { key: "dashboard", label: "Home" },
     { key: "members", label: "Members" },
-    ...(isAdmin ? [{ key: "settings", label: "Settings" }] : []),
+    ...(isAdmin
+      ? [
+          { key: "shuffle", label: "Shuffle" },
+          { key: "settings", label: "Settings" },
+        ]
+      : []),
   ];
 
   return (
     <div className="app-shell">
       {activeTab === "dashboard" && <Dashboard />}
       {activeTab === "members" && <Members />}
+      {activeTab === "shuffle" && <Shuffle isAdmin={isAdmin} />}
       {activeTab === "settings" && <Settings isAdmin={isAdmin} />}
 
       <BottomNav active={activeTab} setActive={setActiveTab} tabs={tabs} />
