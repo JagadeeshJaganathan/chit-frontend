@@ -7,7 +7,23 @@ type Props = {
   refreshKey: number;
   isAdmin: boolean;
   onRefresh: () => void;
+  startDate?: string;
 };
+
+const formatMonthLabel = (startDateValue: string | undefined, monthNumber: number) => {
+  const fallbackDate = new Date("2025-12-01T00:00:00.000Z");
+  const startDate = startDateValue ? new Date(startDateValue) : fallbackDate;
+  const safeDate = Number.isNaN(startDate.getTime()) ? fallbackDate : startDate;
+  const optionDate = new Date(safeDate);
+
+  optionDate.setMonth(optionDate.getMonth() + monthNumber - 1);
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+  }).format(optionDate);
+};
+
 const WinnerHistory = ({
   groupId,
   currentMonth,
@@ -15,6 +31,7 @@ const WinnerHistory = ({
   refreshKey,
   isAdmin,
   onRefresh,
+  startDate,
 }: Props) => {
   const [winners, setWinners] = useState<any[]>([]);
 
@@ -63,7 +80,9 @@ const WinnerHistory = ({
           }`}
         >
           <div>
-            <p className="text-sm">Month {item.month}</p>
+            <p className="text-sm">
+              M{item.month} - {formatMonthLabel(startDate, item.month)}
+            </p>
             <p className="font-medium">
               {item.winner?.memberId?.name || "No winner"}
             </p>

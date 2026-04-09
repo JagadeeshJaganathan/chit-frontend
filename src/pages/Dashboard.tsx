@@ -4,13 +4,42 @@ import PaymentButton from "../components/PaymentButton";
 import WinnerSelector from "../components/WinnerSelector";
 import WinnerHistory from "../components/WinnerHistory";
 
+const DEFAULT_START_MONTH = "2025-12";
+
+const getMonthStartDate = (value?: string) => {
+  const normalizedValue = value || `${DEFAULT_START_MONTH}-01`;
+  const parsedDate = new Date(normalizedValue);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return new Date(`${DEFAULT_START_MONTH}-01`);
+  }
+
+  return parsedDate;
+};
+
+const formatMonthLabel = (date: Date) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+  }).format(date);
+
+const getMonthNumberForDate = (startDateValue?: string, duration = 10) => {
+  const startDate = getMonthStartDate(startDateValue);
+  const now = new Date();
+  const monthDifference =
+    (now.getFullYear() - startDate.getFullYear()) * 12 +
+    (now.getMonth() - startDate.getMonth());
+
+  return Math.min(Math.max(monthDifference + 1, 1), duration);
+};
+
 const Dashboard = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [month, setMonth] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const totalMonths = 10;
+  const [startMonthInput, setStartMonthInput] = useState(DEFAULT_START_MONTH);
+  const [isSavingStartMonth, setIsSavingStartMonth] = useState(false);
 
   const [data, setData] = useState<any>({
     totalMembers: 0,
@@ -24,18 +53,60 @@ const Dashboard = () => {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin";
+  const selectedGroupData = groups.find((group) => group._id === selectedGroup);
+  const totalMonths = selectedGroupData?.duration || 10;
+
+  const monthOptions = Array.from({ length: totalMonths }, (_, i) => {
+    const monthNumber = i + 1;
+    const optionDate = new Date(getMonthStartDate(selectedGroupData?.startDate));
+    optionDate.setMonth(optionDate.getMonth() + i);
+
+    return {
+      value: monthNumber,
+      label: `M${monthNumber} - ${formatMonthLabel(optionDate)}`,
+    };
+  });
 
   // 🔹 Load groups
-  useEffect(() => {
-    API.get("/groups")
-      .then((res) => {
-        setGroups(res.data);
-        if (res.data.length > 0) {
-          setSelectedGroup(res.data[0]._id);
-        }
-      })
-      .catch(console.log);
+  const loadGroups = useCallback(async () => {
+    try {
+      const res = await API.get("/groups");
+      setGroups(res.data);
+
+      if (res.data.length === 0) {
+        setSelectedGroup("");
+        return;
+      }
+
+      setSelectedGroup((currentGroupId: string) => {
+        const nextGroup =
+          res.data.find((group: any) => group._id === currentGroupId) || res.data[0];
+        return nextGroup._id;
+      });
+    } catch (err) {
+      console.log(err);
+    }
   }, []);
+
+  useEffect(() => {
+    loadGroups();
+  }, [loadGroups]);
+
+  useEffect(() => {
+    if (!selectedGroupData) return;
+
+    const nextMonth = getMonthNumberForDate(
+      selectedGroupData.startDate,
+      selectedGroupData.duration,
+    );
+
+    setMonth(nextMonth);
+    setStartMonthInput(
+      selectedGroupData.startDate
+        ? new Date(selectedGroupData.startDate).toISOString().slice(0, 7)
+        : DEFAULT_START_MONTH,
+    );
+  }, [selectedGroupData]);
 
   // 🔹 Load dashboard
   const loadDashboard = useCallback(async () => {
@@ -58,6 +129,25 @@ const Dashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem("user");
     window.location.reload();
+  };
+
+  const handleStartMonthSave = async () => {
+    if (!selectedGroup) return;
+
+    try {
+      setIsSavingStartMonth(true);
+
+      await API.patch(`/groups/${selectedGroup}`, {
+        startDate: `${startMonthInput}-01`,
+      });
+
+      await loadGroups();
+    } catch (err) {
+      console.log(err);
+      alert("Unable to update start month");
+    } finally {
+      setIsSavingStartMonth(false);
+    }
   };
 
   // 🔐 AFTER hooks (important)
@@ -106,13 +196,48 @@ const Dashboard = () => {
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
           >
-            {[...Array(totalMonths)].map((_, i) => (
-              <option key={i + 1} value={i + 1}>
-                M{i + 1}
+            {monthOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </div>
+
+        {selectedGroupData && (
+          <div className="bg-white p-3 rounded-xl shadow space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Chit Start Month</p>
+                <p className="text-xs text-gray-500">
+                  Current month: {monthOptions.find((option) => option.value === month)?.label}
+                </p>
+              </div>
+
+              {isAdmin ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="month"
+                    value={startMonthInput}
+                    onChange={(e) => setStartMonthInput(e.target.value)}
+                    className="border p-2 rounded-lg bg-white"
+                  />
+                  <button
+                    onClick={handleStartMonthSave}
+                    disabled={isSavingStartMonth}
+                    className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm disabled:opacity-60"
+                  >
+                    {isSavingStartMonth ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              ) : (
+                <span className="text-sm font-medium text-blue-700">
+                  {formatMonthLabel(getMonthStartDate(selectedGroupData.startDate))}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2">
@@ -224,6 +349,7 @@ const Dashboard = () => {
             refreshKey={refreshKey}
             isAdmin={isAdmin}
             onRefresh={loadDashboard}
+            startDate={selectedGroupData?.startDate}
           />
         </div>
       </div>
