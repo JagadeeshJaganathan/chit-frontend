@@ -1,36 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import API from "../services/api";
 import PaymentButton from "../components/PaymentButton";
 import WinnerSelector from "../components/WinnerSelector";
 import WinnerHistory from "../components/WinnerHistory";
 
-// ✅ helper
-const generateChitMonths = (startDate: string, duration: number) => {
-  const months = [];
-  const start = new Date(startDate);
-
-  for (let i = 0; i < duration; i++) {
-    const d = new Date(start);
-    d.setMonth(d.getMonth() + i);
-
-    const monthName = d.toLocaleString("default", { month: "short" });
-    const year = d.getFullYear();
-
-    months.push({
-      label: `${monthName} ${year} - M${i + 1}`,
-      value: i + 1,
-    });
-  }
-
-  return months;
-};
-
 const Dashboard = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [month, setMonth] = useState(1);
-  const [monthsList, setMonthsList] = useState<any[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const totalMonths = 10;
 
   const [data, setData] = useState<any>({
     totalMembers: 0,
@@ -40,60 +20,47 @@ const Dashboard = () => {
     pendingMembers: [],
     winner: null,
     allWinners: [],
-    currentMonth: 1,
   });
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isAdmin = user?.role === "admin";
 
-  /* ================= LOAD GROUPS ================= */
+  // 🔹 Load groups
   useEffect(() => {
     API.get("/groups")
       .then((res) => {
         setGroups(res.data);
-
         if (res.data.length > 0) {
-          const first = res.data[0];
-          setSelectedGroup(first._id);
-
-          const list = generateChitMonths(first.startDate, first.duration);
-          setMonthsList(list);
+          setSelectedGroup(res.data[0]._id);
         }
       })
       .catch(console.log);
   }, []);
 
-  /* ================= LOAD DASHBOARD ================= */
-  const loadDashboard = async () => {
+  // 🔹 Load dashboard
+  const loadDashboard = useCallback(async () => {
     if (!selectedGroup) return;
 
     try {
       const res = await API.get(`/dashboard/${selectedGroup}/${month}`);
-      const response = res.data;
-
-      setData(response);
-
-      // 🔥 AUTO SELECT CURRENT MONTH (ONLY FIRST TIME)
-      if (month === 1) {
-        setMonth(response.currentMonth);
-      }
-
+      setData(res.data);
       setRefreshKey((prev) => prev + 1);
     } catch (err) {
       console.log(err);
     }
-  };
+  }, [selectedGroup, month]);
 
   useEffect(() => {
     loadDashboard();
-  }, [selectedGroup, month]);
+  }, [loadDashboard]);
 
-  /* ================= LOGOUT ================= */
+  // 🔐 Logout
   const handleLogout = () => {
     localStorage.removeItem("user");
     window.location.reload();
   };
 
+  // 🔐 AFTER hooks (important)
   if (!user?.role) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -111,7 +78,7 @@ const Dashboard = () => {
 
           <button
             onClick={handleLogout}
-            className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-sm"
+            className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-sm active:scale-95"
           >
             Logout
           </button>
@@ -119,24 +86,12 @@ const Dashboard = () => {
 
         {/* Controls */}
         <div className="flex gap-2">
-          {/* Group */}
           <select
             className="flex-1 border p-2 rounded-xl bg-white"
             value={selectedGroup}
             onChange={(e) => {
-              const groupId = e.target.value;
-              setSelectedGroup(groupId);
+              setSelectedGroup(e.target.value);
               setMonth(1);
-
-              const selected = groups.find((g) => g._id === groupId);
-
-              if (selected) {
-                const list = generateChitMonths(
-                  selected.startDate,
-                  selected.duration,
-                );
-                setMonthsList(list);
-              }
             }}
           >
             {groups.map((g) => (
@@ -146,19 +101,14 @@ const Dashboard = () => {
             ))}
           </select>
 
-          {/* Month */}
           <select
             className="flex-1 border p-2 rounded-xl bg-white"
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
           >
-            {monthsList.map((m) => (
-              <option
-                key={m.value}
-                value={m.value}
-                disabled={m.value > data.currentMonth} // 🔥 disable future
-              >
-                {m.label}
+            {[...Array(totalMonths)].map((_, i) => (
+              <option key={i + 1} value={i + 1}>
+                M{i + 1}
               </option>
             ))}
           </select>
@@ -189,28 +139,33 @@ const Dashboard = () => {
           {data.paidMembers.map((m: any) => (
             <div
               key={m._id}
-              className="flex justify-between border-b py-1 text-sm"
+              className="flex justify-between items-center border-b py-1 text-sm"
             >
               <span>{m.name}</span>
 
-              {isAdmin && (
-                <button
-                  onClick={async () => {
-                    if (!window.confirm("Revert payment?")) return;
+              <div className="flex gap-2 items-center">
+                <span className="bg-green-100 px-2 rounded text-xs">Paid</span>
 
-                    await API.post("/payments/revert", {
-                      memberId: m._id,
-                      groupId: selectedGroup,
-                      month,
-                    });
+                {isAdmin && (
+                  <button
+                    onClick={async () => {
+                      const ok = window.confirm("Revert payment?");
+                      if (!ok) return;
 
-                    loadDashboard();
-                  }}
-                  className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs"
-                >
-                  Undo
-                </button>
-              )}
+                      await API.post("/payments/revert", {
+                        memberId: m._id,
+                        groupId: selectedGroup,
+                        month,
+                      });
+
+                      loadDashboard();
+                    }}
+                    className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs"
+                  >
+                    Undo
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -224,7 +179,7 @@ const Dashboard = () => {
           {data.pendingMembers.map((m: any) => (
             <div
               key={m._id}
-              className="flex justify-between border-b py-1 text-sm"
+              className="flex justify-between items-center border-b py-1 text-sm"
             >
               <span>{m.name}</span>
 
@@ -240,7 +195,7 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Winner */}
+        {/* Winner Section */}
         <div className="bg-white p-4 rounded-xl shadow space-y-3">
           {isAdmin && (
             <WinnerSelector
@@ -254,19 +209,23 @@ const Dashboard = () => {
           )}
 
           <div className="text-center">
-            🏆 {data.winner?.name || "No Winner"}
+            <span className="bg-yellow-100 px-3 py-1 rounded text-sm font-semibold">
+              🏆 {data.winner?.name || "No Winner"}
+            </span>
           </div>
         </div>
 
         {/* Timeline */}
-        <WinnerHistory
-          groupId={selectedGroup}
-          currentMonth={month}
-          totalMonths={monthsList.length}
-          refreshKey={refreshKey}
-          isAdmin={isAdmin}
-          onRefresh={loadDashboard}
-        />
+        <div className="bg-white p-3 rounded-xl shadow">
+          <WinnerHistory
+            groupId={selectedGroup}
+            currentMonth={month}
+            totalMonths={totalMonths}
+            refreshKey={refreshKey}
+            isAdmin={isAdmin}
+            onRefresh={loadDashboard}
+          />
+        </div>
       </div>
     </div>
   );
