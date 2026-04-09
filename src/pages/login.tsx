@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { KeyboardEvent, useState } from "react";
+import API from "../services/api";
 
 type Props = {
   setUser: (user: any) => void;
@@ -7,42 +8,39 @@ type Props = {
 const Login = ({ setUser }: Props) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const u = username.trim();
     const p = password.trim();
 
-    // 👑 ADMIN
-    if (u === "klmadmin" && p === "klmchitadmin") {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          name: "Admin",
-          username: "klmadmin",
-          role: "admin",
-        }),
-      );
-
-      window.location.reload();
+    if (!u || !p) {
+      alert("Enter username and password");
       return;
     }
 
-    // 👤 MEMBER
-    if (u === "klmchitmem" && p === "klmchit") {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          name: "Member",
-          username: "klmchitmem",
-          role: "member",
-        }),
-      );
+    try {
+      setIsLoading(true);
 
-      window.location.reload();
-      return;
+      const res = await API.post("/auth/login", {
+        username: u,
+        password: p,
+      });
+
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.token);
+      setUser(res.data.user);
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Invalid username or password");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    alert("Invalid username or password");
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !isLoading) {
+      void handleLogin();
+    }
   };
 
   return (
@@ -55,6 +53,7 @@ const Login = ({ setUser }: Props) => {
           className="w-full border p-2 rounded mb-3"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
 
         <input
@@ -63,13 +62,15 @@ const Login = ({ setUser }: Props) => {
           className="w-full border p-2 rounded mb-4"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
 
         <button
-          onClick={handleLogin}
-          className="w-full bg-blue-500 text-white py-2 rounded-lg active:scale-95 transition"
+          onClick={() => void handleLogin()}
+          disabled={isLoading}
+          className="w-full bg-blue-500 text-white py-2 rounded-lg active:scale-95 transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Login
+          {isLoading ? "Logging in..." : "Login"}
         </button>
       </div>
     </div>
