@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import API from "../services/api";
 import Breadcrumbs from "../components/Breadcrumbs";
-import { DEFAULT_START_MONTH, formatMonthLabel, getMonthStartDate } from "../utils/group";
+import {
+  DEFAULT_START_MONTH,
+  formatMonthLabel,
+  getMonthNumberForDate,
+  getMonthOptions,
+  getMonthStartDate,
+} from "../utils/group";
 
 type Props = {
   isAdmin: boolean;
@@ -13,6 +19,7 @@ const Settings = ({ isAdmin }: Props) => {
   const [startMonthInput, setStartMonthInput] = useState(DEFAULT_START_MONTH);
   const [isSaving, setIsSaving] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: "",
     totalAmount: "300000",
@@ -58,6 +65,15 @@ const Settings = ({ isAdmin }: Props) => {
       : DEFAULT_START_MONTH;
     setStartMonthInput(nextMonth);
   }, [selectedGroupData]);
+
+  const currentMonthNumber = selectedGroupData
+    ? getMonthNumberForDate(selectedGroupData.startDate, selectedGroupData.duration)
+    : 1;
+  const currentMonthLabel = selectedGroupData
+    ? getMonthOptions(selectedGroupData.startDate, selectedGroupData.duration).find(
+        (option) => option.value === currentMonthNumber,
+      )?.label
+    : "";
 
   if (!isAdmin) {
     return (
@@ -133,6 +149,122 @@ const Settings = ({ isAdmin }: Props) => {
       alert(err.response?.data?.message || "Unable to create group");
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!selectedGroupData) return;
+
+    try {
+      setIsExporting(true);
+
+      const res = await API.get(
+        `/dashboard/${selectedGroupData._id}/${currentMonthNumber}`,
+      );
+
+      const paidMembers = res.data.paidMembers || [];
+      const pendingMembers = res.data.pendingMembers || [];
+      const winnerName = res.data.winner?.name || "No winner selected";
+      const reportWindow = window.open("", "_blank", "width=900,height=1200");
+
+      if (!reportWindow) {
+        alert("Unable to open print window. Please allow popups for this site.");
+        return;
+      }
+
+      const renderList = (title: string, members: any[]) => `
+        <section class="section">
+          <h2>${title}</h2>
+          ${
+            members.length === 0
+              ? `<p class="empty">No members in this section.</p>`
+              : `<ul>${members
+                  .map(
+                    (member: any) =>
+                      `<li><span>${member.name}</span><span>${member.phone ?? ""}</span></li>`,
+                  )
+                  .join("")}</ul>`
+          }
+        </section>
+      `;
+
+      reportWindow.document.write(`
+        <html>
+          <head>
+            <title>${selectedGroupData.name} - ${currentMonthLabel || "Current Month"} Report</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 24px;
+                color: #2f2419;
+              }
+              .header {
+                border-bottom: 2px solid #c75c2a;
+                padding-bottom: 16px;
+                margin-bottom: 24px;
+              }
+              h1 {
+                margin: 0 0 8px;
+                font-size: 28px;
+              }
+              h2 {
+                margin: 0 0 12px;
+                font-size: 18px;
+              }
+              .meta {
+                color: #6f604c;
+                font-size: 14px;
+                margin: 4px 0;
+              }
+              .winner {
+                margin: 20px 0;
+                padding: 16px;
+                background: #fff4e8;
+                border-radius: 12px;
+              }
+              .section {
+                margin-top: 24px;
+              }
+              ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+              }
+              li {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 12px;
+                border-bottom: 1px solid #eadfcf;
+                font-size: 14px;
+              }
+              .empty {
+                color: #7b6a56;
+                font-size: 14px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>${selectedGroupData.name}</h1>
+              <p class="meta">Month: ${currentMonthLabel || `M${currentMonthNumber}`}</p>
+              <p class="meta">Exported on: ${new Date().toLocaleString()}</p>
+            </div>
+            <div class="winner">
+              <h2>Current Month Winner</h2>
+              <div>${winnerName}</div>
+            </div>
+            ${renderList("Paid Members", paidMembers)}
+            ${renderList("Pending Members", pendingMembers)}
+          </body>
+        </html>
+      `);
+      reportWindow.document.close();
+      reportWindow.focus();
+      reportWindow.print();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Unable to export report");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -256,6 +388,24 @@ const Settings = ({ isAdmin }: Props) => {
                 : isEnding
                   ? "Ending..."
                   : "End This Chit"}
+            </button>
+          </div>
+
+          <div className="soft-card rounded-[26px] p-5">
+            <p className="section-title">Export</p>
+            <h3 className="mt-2 text-lg font-extrabold">Current month PDF report</h3>
+            <p className="mt-2 text-sm text-[#7b6a56]">
+              Export paid, pending, and the current month winner as a print-ready PDF.
+            </p>
+            <div className="mt-3 rounded-2xl bg-[#f8f3eb] p-3 text-sm text-[#6f604c]">
+              {currentMonthLabel || `M${currentMonthNumber}`}
+            </div>
+            <button
+              onClick={handleExportPdf}
+              disabled={isExporting}
+              className="pill-button mt-4 w-full bg-[#3558a8] text-white disabled:opacity-50"
+            >
+              {isExporting ? "Preparing PDF..." : "Export PDF"}
             </button>
           </div>
         </div>
