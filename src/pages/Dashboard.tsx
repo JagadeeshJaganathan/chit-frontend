@@ -1,16 +1,36 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import API from "../services/api";
 import PaymentButton from "../components/PaymentButton";
 import WinnerSelector from "../components/WinnerSelector";
 import WinnerHistory from "../components/WinnerHistory";
 
+// ✅ helper
+const generateChitMonths = (startDate: string, duration: number) => {
+  const months = [];
+  const start = new Date(startDate);
+
+  for (let i = 0; i < duration; i++) {
+    const d = new Date(start);
+    d.setMonth(d.getMonth() + i);
+
+    const monthName = d.toLocaleString("default", { month: "short" });
+    const year = d.getFullYear();
+
+    months.push({
+      label: `${monthName} ${year} - M${i + 1}`,
+      value: i + 1,
+    });
+  }
+
+  return months;
+};
+
 const Dashboard = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState("");
   const [month, setMonth] = useState(1);
+  const [monthsList, setMonthsList] = useState<any[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const totalMonths = 10;
 
   const [data, setData] = useState<any>({
     totalMembers: 0,
@@ -30,15 +50,23 @@ const Dashboard = () => {
     API.get("/groups")
       .then((res) => {
         setGroups(res.data);
+
         if (res.data.length > 0) {
-          setSelectedGroup(res.data[0]._id);
+          const first = res.data[0];
+          setSelectedGroup(first._id);
+
+          // ✅ generate months
+          const list = generateChitMonths(first.startDate, first.duration);
+          setMonthsList(list);
+
+          setMonth(1);
         }
       })
       .catch(console.log);
   }, []);
 
-  // 🔹 Load dashboard
-  const loadDashboard = useCallback(async () => {
+  // 🔹 Load dashboard (NO useCallback)
+  const loadDashboard = async () => {
     if (!selectedGroup) return;
 
     try {
@@ -48,11 +76,11 @@ const Dashboard = () => {
     } catch (err) {
       console.log(err);
     }
-  }, [selectedGroup, month]);
+  };
 
   useEffect(() => {
     loadDashboard();
-  }, [loadDashboard]);
+  }, [selectedGroup, month]);
 
   // 🔐 Logout
   const handleLogout = () => {
@@ -60,7 +88,6 @@ const Dashboard = () => {
     window.location.reload();
   };
 
-  // 🔐 AFTER hooks (important)
   if (!user?.role) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -78,7 +105,7 @@ const Dashboard = () => {
 
           <button
             onClick={handleLogout}
-            className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-sm active:scale-95"
+            className="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-sm"
           >
             Logout
           </button>
@@ -86,12 +113,24 @@ const Dashboard = () => {
 
         {/* Controls */}
         <div className="flex gap-2">
+          {/* Group */}
           <select
             className="flex-1 border p-2 rounded-xl bg-white"
             value={selectedGroup}
             onChange={(e) => {
-              setSelectedGroup(e.target.value);
+              const groupId = e.target.value;
+              setSelectedGroup(groupId);
               setMonth(1);
+
+              const selected = groups.find((g) => g._id === groupId);
+
+              if (selected) {
+                const list = generateChitMonths(
+                  selected.startDate,
+                  selected.duration,
+                );
+                setMonthsList(list);
+              }
             }}
           >
             {groups.map((g) => (
@@ -101,14 +140,15 @@ const Dashboard = () => {
             ))}
           </select>
 
+          {/* Month (FIXED 🔥) */}
           <select
             className="flex-1 border p-2 rounded-xl bg-white"
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
           >
-            {[...Array(totalMonths)].map((_, i) => (
-              <option key={i + 1} value={i + 1}>
-                M{i + 1}
+            {monthsList.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
               </option>
             ))}
           </select>
@@ -139,33 +179,28 @@ const Dashboard = () => {
           {data.paidMembers.map((m: any) => (
             <div
               key={m._id}
-              className="flex justify-between items-center border-b py-1 text-sm"
+              className="flex justify-between border-b py-1 text-sm"
             >
               <span>{m.name}</span>
 
-              <div className="flex gap-2 items-center">
-                <span className="bg-green-100 px-2 rounded text-xs">Paid</span>
+              {isAdmin && (
+                <button
+                  onClick={async () => {
+                    if (!window.confirm("Revert payment?")) return;
 
-                {isAdmin && (
-                  <button
-                    onClick={async () => {
-                      const ok = window.confirm("Revert payment?");
-                      if (!ok) return;
+                    await API.post("/payments/revert", {
+                      memberId: m._id,
+                      groupId: selectedGroup,
+                      month,
+                    });
 
-                      await API.post("/payments/revert", {
-                        memberId: m._id,
-                        groupId: selectedGroup,
-                        month,
-                      });
-
-                      loadDashboard();
-                    }}
-                    className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs"
-                  >
-                    Undo
-                  </button>
-                )}
-              </div>
+                    loadDashboard();
+                  }}
+                  className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs"
+                >
+                  Undo
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -179,7 +214,7 @@ const Dashboard = () => {
           {data.pendingMembers.map((m: any) => (
             <div
               key={m._id}
-              className="flex justify-between items-center border-b py-1 text-sm"
+              className="flex justify-between border-b py-1 text-sm"
             >
               <span>{m.name}</span>
 
@@ -195,7 +230,7 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Winner Section */}
+        {/* Winner */}
         <div className="bg-white p-4 rounded-xl shadow space-y-3">
           {isAdmin && (
             <WinnerSelector
@@ -209,23 +244,19 @@ const Dashboard = () => {
           )}
 
           <div className="text-center">
-            <span className="bg-yellow-100 px-3 py-1 rounded text-sm font-semibold">
-              🏆 {data.winner?.name || "No Winner"}
-            </span>
+            🏆 {data.winner?.name || "No Winner"}
           </div>
         </div>
 
         {/* Timeline */}
-        <div className="bg-white p-3 rounded-xl shadow">
-          <WinnerHistory
-            groupId={selectedGroup}
-            currentMonth={month}
-            totalMonths={totalMonths}
-            refreshKey={refreshKey}
-            isAdmin={isAdmin}
-            onRefresh={loadDashboard}
-          />
-        </div>
+        <WinnerHistory
+          groupId={selectedGroup}
+          currentMonth={month}
+          totalMonths={monthsList.length}
+          refreshKey={refreshKey}
+          isAdmin={isAdmin}
+          onRefresh={loadDashboard}
+        />
       </div>
     </div>
   );
